@@ -1,0 +1,3 @@
+SLATEDB_V1
+PAGE:1|User{name=Alice,id=1001,email=alice@example.com}
+PAGE:3|User{name=Charlie,id=1003,email=charlie@example.com}

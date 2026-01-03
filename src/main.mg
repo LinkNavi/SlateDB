@@ -1,140 +1,223 @@
+// Example: Using SlateDB for a blog application
 using Std.IO;
-using Std.File;
+using Std.String;
+using Std.Array;
 
+fn setupSchemas(db: SlateDB) {
+    println("Setting up schemas...");
+    
+    // Use SchemaBuilder.forTable() instead of new SchemaBuilder("...")
+    let userSchema = SchemaBuilder.forTable("User")
+        .addInt("id")
+        .addString("username")
+        .addString("email")
+        .addInt("posts_count")
+        .build();
+    
+    db.registerSchema(userSchema);
+    println("  ✓ User schema registered");
+    
+    let postSchema = SchemaBuilder.forTable("Post")
+        .addInt("id")
+        .addString("title")
+        .addString("content")
+        .addObject("author")
+        .addArray("tags")
+        .addInt("likes")
+        .build();
+    
+    db.registerSchema(postSchema);
+    println("  ✓ Post schema registered");
+    
+    let commentSchema = SchemaBuilder.forTable("Comment")
+        .addInt("id")
+        .addString("text")
+        .addObject("author")
+        .addInt("post_id")
+        .build();
+    
+    db.registerSchema(commentSchema);
+    println("  ✓ Comment schema registered\n");
+}
 
-
-
-class SlateDB {
-
-    // ------------------------------------------------------------------------
-    // Internal storage
-    // ------------------------------------------------------------------------
-    priv file: File.Handle
-    priv pageSize: int
-    priv classIdCounter: int = 1
-    priv classes: Map<string, ClassMeta> = Map.create()
-
-    // ------------------------------------------------------------------------
-    // Class metadata structure
-    // ------------------------------------------------------------------------
-    class ClassMeta {
-        pub id: int
-        pub name: string
-        pub fields: Array<FieldMeta> = Array.create()
+fn createSampleData(db: SlateDB) {
+    println("Creating sample data...");
+    
+    let userOpt = db.createObject("User");
+    if (isNone(userOpt)) {
+        println("Failed to create user object");
+        return;
     }
+    
+    let user = unwrap(userOpt);
+    user.setField("id", SlateValue.createInt(1));
+    user.setField("username", SlateValue.createString("alice"));
+    user.setField("email", SlateValue.createString("alice@example.com"));
+    user.setField("posts_count", SlateValue.createInt(0));
+    
+    db.save(user);
+    println("  ✓ Created user: alice");
+    
+    let user2Opt = db.createObject("User");
+    let user2 = unwrap(user2Opt);
+    user2.setField("id", SlateValue.createInt(2));
+    user2.setField("username", SlateValue.createString("bob"));
+    user2.setField("email", SlateValue.createString("bob@example.com"));
+    user2.setField("posts_count", SlateValue.createInt(0));
+    
+    db.save(user2);
+    println("  ✓ Created user: bob");
+    
+    let postOpt = db.createObject("Post");
+    let post = unwrap(postOpt);
+    post.setField("id", SlateValue.createInt(1));
+    post.setField("title", SlateValue.createString("Getting Started with SlateDB"));
+    post.setField("content", SlateValue.createString("SlateDB is an amazing object database..."));
+    post.setField("author", SlateValue.createObjectRef(user.objectId));
+    
+    let tags = SlateValue.createArray();
+    tags.pushToArray(SlateValue.createString("database"));
+    tags.pushToArray(SlateValue.createString("tutorial"));
+    tags.pushToArray(SlateValue.createString("magolor"));
+    post.setField("tags", tags);
+    
+    post.setField("likes", SlateValue.createInt(42));
+    
+    db.save(post);
+    println("  ✓ Created post with embedded author");
+    
+    let post2Opt = db.createObject("Post");
+    let post2 = unwrap(post2Opt);
+    post2.setField("id", SlateValue.createInt(2));
+    post2.setField("title", SlateValue.createString("Advanced SlateDB Patterns"));
+    post2.setField("content", SlateValue.createString("Let's explore advanced features..."));
+    post2.setField("author", SlateValue.createObjectRef(user2.objectId));
+    
+    let tags2 = SlateValue.createArray();
+    tags2.pushToArray(SlateValue.createString("database"));
+    tags2.pushToArray(SlateValue.createString("advanced"));
+    post2.setField("tags", tags2);
+    
+    post2.setField("likes", SlateValue.createInt(128));
+    
+    db.save(post2);
+    println("  ✓ Created second post\n");
+}
 
-    class FieldMeta {
-        pub name: string
-        pub typeName: string
-        pub nestedClassId: int = 0
-    }
-
-    // ------------------------------------------------------------------------
-    // Open or create a DB
-    // ------------------------------------------------------------------------
-    pub fn open(path: string, pageSize_: int = 4096) -> SlateDB {
-        let db = SlateDB.new()
-        db.pageSize = pageSize_
-
-        if !File.exists(path) {
-            db.file = File.open(path, File.Mode.Write).unwrap()
-            db.writeHeader()
-        } else {
-            db.file = File.open(path, File.Mode.ReadWrite).unwrap()
-            db.loadHeader()
-            db.loadMeta()
+fn displayAllPosts(db: SlateDB) {
+    println("=== All Blog Posts ===\n");
+    
+    let posts = db.query("Post");
+    let count = Array.length<SlateObject>(posts);
+    
+    println($"Found {count} posts:\n");
+    
+    let i = 0;
+    while (i < count) {
+        let post = posts[i];
+        
+        let titleOpt = post.getField("title");
+        let title = "Untitled";
+        if (isSome(titleOpt)) {
+            let titleVal = unwrap(titleOpt);
+            title = titleVal.stringValue;
         }
-
-        return db
-    }
-
-    // ------------------------------------------------------------------------
-    // Create class schema (register for DB)
-    // ------------------------------------------------------------------------
-    pub fn registerClass(name: string, fields: Array<FieldMeta>) -> int {
-        let meta = ClassMeta.new()
-        meta.id = classIdCounter
-        meta.name = name
-        meta.fields = fields
-        classes.insert(name, meta)
-        classIdCounter += 1
-        return meta.id
-    }
-
-    // ------------------------------------------------------------------------
-    // Create new object (returns in-memory instance)
-    // ------------------------------------------------------------------------
-    pub fn create<T>() -> T {
-        let obj = T.new()
-        // Allocate a page and assign Class ID internally
-        // Will serialize on save
-        return obj
-    }
-
-    // ------------------------------------------------------------------------
-    // Save object to DB
-    // ------------------------------------------------------------------------
-    pub fn save<T>(obj: T) {
-        let meta = classes.get(typeof(T).name)
-        // Serialize obj fields into bytes according to meta
-        let bytes = Array.create<uint8>()
-        for f in meta.fields {
-            let value = obj.getField(f.name)
-            bytes.extend(serializeField(value, f.typeName, f.nestedClassId))
+        
+        let likesOpt = post.getField("likes");
+        let likes = 0;
+        if (isSome(likesOpt)) {
+            let likesVal = unwrap(likesOpt);
+            likes = likesVal.intValue;
         }
-        // Write bytes to a new page
-        writePage(bytes, meta.id)
-    }
-
-    // ------------------------------------------------------------------------
-    // Load object by page ID
-    // ------------------------------------------------------------------------
-    pub fn get<T>(pageId: int) -> T {
-        let meta = classes.get(typeof(T).name)
-        let bytes = readPage(pageId)
-        let obj = T.new()
-        deserializeFields(obj, bytes, meta.fields)
-        return obj
-    }
-
-    // ------------------------------------------------------------------------
-    // Internal helpers (high-level interface)
-    // ------------------------------------------------------------------------
-    priv fn writeHeader() {
-        // Write DB file header (magic, pageSize, etc.)
-    }
-
-    priv fn loadHeader() {
-        // Load header (pageSize, etc.)
-    }
-
-    priv fn writePage(data: Array<uint8>, classId: int) {
-        // Allocate page, write PageHeader + ClassID + data
-    }
-
-    priv fn readPage(pageId: int) -> Array<uint8> {
-        // Read page data as bytes
-        return Array.create<uint8>()
-    }
-
-    priv fn loadMeta() {
-        // Read META pages and rebuild class map
-    }
-
-    priv fn serializeField(value: any, typeName: string, nestedClassId: int) -> Array<uint8> {
-        // Convert field to bytes based on type
-        return Array.create<uint8>()
-    }
-
-    priv fn deserializeFields(obj: any, bytes: Array<uint8>, fields: Array<FieldMeta>) {
-        // Convert bytes back into object fields
+        
+        let authorOpt = post.getField("author");
+        let authorName = "Unknown";
+        if (isSome(authorOpt)) {
+            let authorVal = unwrap(authorOpt);
+            let author = authorVal.objectValue;
+            
+            let nameOpt = author.getField("username");
+            if (isSome(nameOpt)) {
+                let nameVal = unwrap(nameOpt);
+                authorName = nameVal.stringValue;
+            }
+        }
+        
+        println($"📝 {title}");
+        println($"   Author: {authorName}");
+        println($"   Likes: {likes}");
+        
+        let tagsOpt = post.getField("tags");
+        if (isSome(tagsOpt)) {
+            let tagsVal = unwrap(tagsOpt);
+            let tagArray = tagsVal.arrayValue;
+            let tagCount = Array.length<SlateValue>(tagArray);
+            
+            print("   Tags: ");
+            let j = 0;
+            while (j < tagCount) {
+                let tag = tagArray[j];
+                print(tag.stringValue);
+                if (j < tagCount - 1) {
+                    print(", ");
+                }
+                j = j + 1;
+            }
+            println("");
+        }
+        
+        println("");
+        i = i + 1;
     }
 }
-class User{
-	pub name: string;
-	
-	pub id: int;
+
+fn testEmbeddedObjects(db: SlateDB) {
+    println("=== Testing Nested Objects ===\n");
+    
+    let innerUser = db.createObject("User");
+    let user = unwrap(innerUser);
+    user.setField("username", SlateValue.createString("nested_user"));
+    
+    let middlePost = db.createObject("Post");
+    let post = unwrap(middlePost);
+    post.setField("title", SlateValue.createString("Nested Post"));
+    post.setField("author", SlateValue.createObjectRef(user.objectId));
+    
+    let outerComment = db.createObject("Comment");
+    let comment = unwrap(outerComment);
+    comment.setField("text", SlateValue.createString("Great post!"));
+    comment.setField("author", SlateValue.createObjectRef(user.objectId));
+    comment.setField("post_id", SlateValue.createInt(1));
+    
+    db.save(comment);
+    
+    println("✓ Created nested object structure:");
+    println("  Comment -> Author (User)");
+    println("  Comment -> Post -> Author (User)");
+    println("\nNested objects allow you to create rich, interconnected data!");
 }
+
 fn main() {
-
+    println("=== SlateDB Blog Example ===\n");
+    
+    let config = SlateConfig.createEncrypted("my-secret-password-123");
+    config.pageSize = 8192;
+    
+    let db = new SlateDB();
+    let opened = db.open("blog.slatedb", config);
+    
+    if (!opened) {
+        println("Failed to open database!");
+        return 1;
+    }
+    
+    println("✓ Database opened successfully\n");
+    
+    setupSchemas(db);
+    createSampleData(db);
+    displayAllPosts(db);
+    testEmbeddedObjects(db);
+    
+    db.close();
+    println("\n✓ Database closed");
 }
