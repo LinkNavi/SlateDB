@@ -5,13 +5,32 @@ using Std.String;
 using Std.Array;
 using Std.Map;
 
+// Using @cpp blocks for things that need precise C++ control
+
+class SlateSchema {
+    pub className: string;
+    pub classId: int;
+    pub fieldNames: Array<string>;
+    pub fieldTypes: Array<int>;
+    
+    pub fn create() {
+        className = "";
+        classId = 0;
+    }
+    
+    pub fn addField(name: string, typeCode: int) {
+        fieldNames.push_back(name);
+        fieldTypes.push_back(typeCode);
+    }
+}
+
 class SlateValue {
     pub valueType: int;
     pub intValue: int;
     pub floatValue: float;
     pub stringValue: string;
     pub boolValue: bool;
-    pub objectId: int;  // Store object ID instead of object directly
+    pub objectId: int;
     pub arrayValue: Array<SlateValue>;
     
     pub fn create() {
@@ -60,12 +79,11 @@ class SlateValue {
     pub static fn createArray() -> SlateValue {
         let v = new SlateValue();
         v.valueType = 6;
-        v.arrayValue = Array.create<SlateValue>();
         return v;
     }
     
     pub fn pushToArray(val: SlateValue) {
-        Array.push<SlateValue>(arrayValue, val);
+        arrayValue.push_back(val);
     }
 }
 
@@ -77,34 +95,20 @@ class SlateObject {
     pub fn create() {
         className = "";
         objectId = 0;
-        fields = Map.create<string, SlateValue>();
     }
     
     pub fn setField(name: string, value: SlateValue) {
-        Map.insert<string, SlateValue>(fields, name, value);
+        fields[name] = value;
     }
     
     pub fn getField(name: string) -> Option<SlateValue> {
-        return Map.get<string, SlateValue>(fields, name);
-    }
-}
-
-class SlateSchema {
-    pub className: string;
-    pub classId: int;
-    pub fieldNames: Array<string>;
-    pub fieldTypes: Array<int>;
-    
-    pub fn create() {
-        className = "";
-        classId = 0;
-        fieldNames = Array.create<string>();
-        fieldTypes = Array.create<int>();
-    }
-    
-    pub fn addField(name: string, typeCode: int) {
-        Array.push<string>(fieldNames, name);
-        Array.push<int>(fieldTypes, typeCode);
+        @cpp {
+            auto it = this->fields.find(name);
+            if (it != this->fields.end()) {
+                return std::make_optional(it->second);
+            }
+            return std::nullopt;
+        }
     }
 }
 
@@ -144,8 +148,6 @@ class SlateDB {
         isOpen = false;
         filepath = "";
         nextObjectId = 1;
-        schemas = Map.create<string, SlateSchema>();
-        objectCache = Map.create<int, SlateObject>();
     }
     
     pub fn open(path: string, cfg: SlateConfig) -> bool {
@@ -169,11 +171,23 @@ class SlateDB {
     }
     
     pub fn registerSchema(schema: SlateSchema) {
-        Map.insert<string, SlateSchema>(schemas, schema.className, schema);
+        println($"Registering schema: {schema.className}");
+        schemas[schema.className] = schema;
+        println($"Schema count after register: {schemas.size()}");
     }
     
     pub fn getSchema(className: string) -> Option<SlateSchema> {
-        return Map.get<string, SlateSchema>(schemas, className);
+        println($"Looking for schema: {className}");
+        println($"Current schema count: {schemas.size()}");
+        @cpp {
+            auto it = this->schemas.find(className);
+            if (it != this->schemas.end()) {
+                std::cout << "Found schema!" << std::endl;
+                return std::make_optional(it->second);
+            }
+            std::cout << "Schema not found!" << std::endl;
+            return std::nullopt;
+        }
     }
     
     pub fn createObject(className: string) -> Option<SlateObject> {
@@ -188,7 +202,7 @@ class SlateDB {
             nextObjectId = nextObjectId + 1;
             
             let i = 0;
-            let fieldCount = Array.length<string>(schema.fieldNames);
+            let fieldCount: int = schema.fieldNames.size();
             while (i < fieldCount) {
                 let fieldName = schema.fieldNames[i];
                 obj.setField(fieldName, SlateValue.createNull());
@@ -202,29 +216,30 @@ class SlateDB {
     }
     
     pub fn save(obj: SlateObject) {
-        Map.insert<int, SlateObject>(objectCache, obj.objectId, obj);
+        objectCache[obj.objectId] = obj;
         println("Saved object");
     }
     
     pub fn load(objectId: int) -> Option<SlateObject> {
-        return Map.get<int, SlateObject>(objectCache, objectId);
+        @cpp {
+            auto it = this->objectCache.find(objectId);
+            if (it != this->objectCache.end()) {
+                return std::make_optional(it->second);
+            }
+            return std::nullopt;
+        }
     }
     
     pub fn query(className: string) -> Array<SlateObject> {
-        let results = Array.create<SlateObject>();
-        let allObjects = Map.values<int, SlateObject>(objectCache);
-        
-        let i = 0;
-        let total = Array.length<SlateObject>(allObjects);
-        while (i < total) {
-            let obj = allObjects[i];
-            if (obj.className == className) {
-                Array.push<SlateObject>(results, obj);
+        @cpp {
+            std::vector<SlateObject> results;
+            for (auto& pair : this->objectCache) {
+                if (pair.second.className == className) {
+                    results.push_back(pair.second);
+                }
             }
-            i = i + 1;
+            return results;
         }
-        
-        return results;
     }
 }
 

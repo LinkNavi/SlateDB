@@ -3,10 +3,9 @@ using Std.IO;
 using Std.String;
 using Std.Array;
 
-fn setupSchemas(db: SlateDB) {
+fn setupSchemas(db: SlateDB) -> SlateDB {
     println("Setting up schemas...");
     
-    // Use SchemaBuilder.forTable() instead of new SchemaBuilder("...")
     let userSchema = SchemaBuilder.forTable("User")
         .addInt("id")
         .addString("username")
@@ -38,15 +37,16 @@ fn setupSchemas(db: SlateDB) {
     
     db.registerSchema(commentSchema);
     println("  ✓ Comment schema registered\n");
+    return db;
 }
 
-fn createSampleData(db: SlateDB) {
+fn createSampleData(db: SlateDB) -> SlateDB {
     println("Creating sample data...");
     
     let userOpt = db.createObject("User");
     if (isNone(userOpt)) {
         println("Failed to create user object");
-        return;
+        return db;
     }
     
     let user = unwrap(userOpt);
@@ -102,13 +102,14 @@ fn createSampleData(db: SlateDB) {
     
     db.save(post2);
     println("  ✓ Created second post\n");
+    return db;
 }
 
-fn displayAllPosts(db: SlateDB) {
+fn displayAllPosts(db: SlateDB) -> SlateDB {
     println("=== All Blog Posts ===\n");
     
     let posts = db.query("Post");
-    let count = Array.length<SlateObject>(posts);
+    let count: int = posts.size();
     
     println($"Found {count} posts:\n");
     
@@ -134,13 +135,9 @@ fn displayAllPosts(db: SlateDB) {
         let authorName = "Unknown";
         if (isSome(authorOpt)) {
             let authorVal = unwrap(authorOpt);
-            let author = authorVal.objectValue;
-            
-            let nameOpt = author.getField("username");
-            if (isSome(nameOpt)) {
-                let nameVal = unwrap(nameOpt);
-                authorName = nameVal.stringValue;
-            }
+            // For now just show the author ID since we store refs
+            let authorId = authorVal.objectId;
+            authorName = $"User #{authorId}";
         }
         
         println($"📝 {title}");
@@ -151,7 +148,7 @@ fn displayAllPosts(db: SlateDB) {
         if (isSome(tagsOpt)) {
             let tagsVal = unwrap(tagsOpt);
             let tagArray = tagsVal.arrayValue;
-            let tagCount = Array.length<SlateValue>(tagArray);
+            let tagCount: int = tagArray.size();
             
             print("   Tags: ");
             let j = 0;
@@ -169,9 +166,10 @@ fn displayAllPosts(db: SlateDB) {
         println("");
         i = i + 1;
     }
+    return db;
 }
 
-fn testEmbeddedObjects(db: SlateDB) {
+fn testEmbeddedObjects(db: SlateDB) -> SlateDB {
     println("=== Testing Nested Objects ===\n");
     
     let innerUser = db.createObject("User");
@@ -195,6 +193,7 @@ fn testEmbeddedObjects(db: SlateDB) {
     println("  Comment -> Author (User)");
     println("  Comment -> Post -> Author (User)");
     println("\nNested objects allow you to create rich, interconnected data!");
+    return db;
 }
 
 fn main() {
@@ -213,10 +212,10 @@ fn main() {
     
     println("✓ Database opened successfully\n");
     
-    setupSchemas(db);
-    createSampleData(db);
-    displayAllPosts(db);
-    testEmbeddedObjects(db);
+    db = setupSchemas(db);
+    db = createSampleData(db);
+    db = displayAllPosts(db);
+    db = testEmbeddedObjects(db);
     
     db.close();
     println("\n✓ Database closed");
