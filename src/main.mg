@@ -2,6 +2,7 @@
 using Std.IO;
 using Std.String;
 using Std.Array;
+using SlateDB.slate.db;
 
 fn setupSchemas(db: SlateDB) -> SlateDB {
     println("Setting up schemas...");
@@ -27,7 +28,6 @@ fn setupSchemas(db: SlateDB) -> SlateDB {
     
     db.registerSchema(postSchema);
     println("  ✓ Post schema registered");
-    
     let commentSchema = SchemaBuilder.forTable("Comment")
         .addInt("id")
         .addString("text")

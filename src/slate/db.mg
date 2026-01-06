@@ -1,11 +1,11 @@
-// SlateDB - A lightweight object-oriented database for Magolor
+// src/slate/db.mg - FIXED VERSION
+// Changed all field accesses to use explicit "this.field" syntax
+
 using Std.IO;
 using Std.File;
 using Std.String;
 using Std.Array;
 using Std.Map;
-
-// Using @cpp blocks for things that need precise C++ control
 
 class SlateSchema {
     pub className: string;
@@ -14,13 +14,13 @@ class SlateSchema {
     pub fieldTypes: Array<int>;
     
     pub fn create() {
-        className = "";
-        classId = 0;
+        this.className = "";
+        this.classId = 0;
     }
     
     pub fn addField(name: string, typeCode: int) {
-        fieldNames.push_back(name);
-        fieldTypes.push_back(typeCode);
+        this.fieldNames.push_back(name);
+        this.fieldTypes.push_back(typeCode);
     }
 }
 
@@ -34,12 +34,12 @@ class SlateValue {
     pub arrayValue: Array<SlateValue>;
     
     pub fn create() {
-        valueType = 0;
-        intValue = 0;
-        floatValue = 0.0;
-        stringValue = "";
-        boolValue = false;
-        objectId = -1;
+        this.valueType = 0;
+        this.intValue = 0;
+        this.floatValue = 0.0;
+        this.stringValue = "";
+        this.boolValue = false;
+        this.objectId = -1;
     }
     
     pub static fn createNull() -> SlateValue {
@@ -83,7 +83,7 @@ class SlateValue {
     }
     
     pub fn pushToArray(val: SlateValue) {
-        arrayValue.push_back(val);
+        this.arrayValue.push_back(val);
     }
 }
 
@@ -93,12 +93,12 @@ class SlateObject {
     pub fields: Map<string, SlateValue>;
     
     pub fn create() {
-        className = "";
-        objectId = 0;
+        this.className = "";
+        this.objectId = 0;
     }
     
     pub fn setField(name: string, value: SlateValue) {
-        fields[name] = value;
+        this.fields[name] = value;
     }
     
     pub fn getField(name: string) -> Option<SlateValue> {
@@ -119,10 +119,10 @@ class SlateConfig {
     pub autoFlush: bool;
     
     pub fn create() {
-        pageSize = 4096;
-        encrypted = false;
-        password = "";
-        autoFlush = true;
+        this.pageSize = 4096;
+        this.encrypted = false;
+        this.password = "";
+        this.autoFlush = true;
     }
     
     pub static fn createDefault() -> SlateConfig {
@@ -137,7 +137,7 @@ class SlateConfig {
     }
 }
 
-class SlateDB {
+pub class SlateDB {
     pub isOpen: bool;
     pub filepath: string;
     pub nextObjectId: int;
@@ -145,13 +145,13 @@ class SlateDB {
     pub objectCache: Map<int, SlateObject>;
     
     pub fn create() {
-        isOpen = false;
-        filepath = "";
-        nextObjectId = 1;
+        this.isOpen = false;
+        this.filepath = "";
+        this.nextObjectId = 1;
     }
     
     pub fn open(path: string, cfg: SlateConfig) -> bool {
-        filepath = path;
+        this.filepath = path;
         
         let exists = File.exists(path);
         if (exists) {
@@ -159,26 +159,26 @@ class SlateDB {
         } else {
             println("Creating new database");
         }
-        isOpen = true;
+        this.isOpen = true;
         return true;
     }
     
     pub fn close() {
-        if (isOpen) {
+        if (this.isOpen) {
             println("Closing database");
-            isOpen = false;
+            this.isOpen = false;
         }
     }
     
     pub fn registerSchema(schema: SlateSchema) {
         println($"Registering schema: {schema.className}");
-        schemas[schema.className] = schema;
-        println($"Schema count after register: {schemas.size()}");
+        this.schemas[schema.className] = schema;
+        println($"Schema count after register: {this.schemas.size()}");
     }
     
     pub fn getSchema(className: string) -> Option<SlateSchema> {
         println($"Looking for schema: {className}");
-        println($"Current schema count: {schemas.size()}");
+        println($"Current schema count: {this.schemas.size()}");
         @cpp {
             auto it = this->schemas.find(className);
             if (it != this->schemas.end()) {
@@ -191,15 +191,15 @@ class SlateDB {
     }
     
     pub fn createObject(className: string) -> Option<SlateObject> {
-        let schemaOpt = getSchema(className);
+        let schemaOpt = this.getSchema(className);
         let hasSchema = isSome(schemaOpt);
         
         if (hasSchema) {
             let schema = unwrap(schemaOpt);
             let obj = new SlateObject();
             obj.className = className;
-            obj.objectId = nextObjectId;
-            nextObjectId = nextObjectId + 1;
+            obj.objectId = this.nextObjectId;
+            this.nextObjectId = this.nextObjectId + 1;
             
             let i = 0;
             let fieldCount: int = schema.fieldNames.size();
@@ -216,7 +216,7 @@ class SlateDB {
     }
     
     pub fn save(obj: SlateObject) {
-        objectCache[obj.objectId] = obj;
+        this.objectCache[obj.objectId] = obj;
         println("Saved object");
     }
     
@@ -248,8 +248,8 @@ class SchemaBuilder {
     pub tableName: string;
     
     pub fn create() {
-        schema = new SlateSchema();
-        tableName = "";
+        this.schema = new SlateSchema();
+        this.tableName = "";
     }
     
     pub static fn forTable(name: string) -> SchemaBuilder {
@@ -260,31 +260,31 @@ class SchemaBuilder {
     }
     
     pub fn addInt(name: string) -> SchemaBuilder {
-        schema.addField(name, 1);
+        this.schema.addField(name, 1);
         return this;
     }
     
     pub fn addString(name: string) -> SchemaBuilder {
-        schema.addField(name, 3);
+        this.schema.addField(name, 3);
         return this;
     }
     
     pub fn addBool(name: string) -> SchemaBuilder {
-        schema.addField(name, 4);
+        this.schema.addField(name, 4);
         return this;
     }
     
     pub fn addObject(name: string) -> SchemaBuilder {
-        schema.addField(name, 5);
+        this.schema.addField(name, 5);
         return this;
     }
     
     pub fn addArray(name: string) -> SchemaBuilder {
-        schema.addField(name, 6);
+        this.schema.addField(name, 6);
         return this;
     }
     
     pub fn build() -> SlateSchema {
-        return schema;
+        return this.schema;
     }
 }
