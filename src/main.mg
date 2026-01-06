@@ -4,6 +4,7 @@ using Std.String;
 using Std.Array;
 using SlateDB.slate.db;
 
+
 fn setupSchemas(db: SlateDB) -> SlateDB {
     println("Setting up schemas...");
     
