@@ -501,21 +501,21 @@ pub fn exportObjectEncrypted(obj: SlateObject, filename: string, password: strin
         }
     }
     
-    // Convert to Array<int> for encryption
-    let plainData = writer.data;
-    
-    // Encrypt using AES-256-GCM (with Crypto. prefix)
-    let encrypted = Crypto.encrypt(plainData, password);
-    
-    if (!encrypted.success) {
-        @cpp {
+    // Inline C++ with direct Crypto namespace calls
+    @cpp {
+        // Import Crypto functions directly
+        using Crypto::CryptoResult;
+        using Crypto::encrypt;
+        
+        // Encrypt data
+        CryptoResult encrypted = encrypt(writer.data, password);
+        
+        if (!encrypted.success) {
             std::cerr << "Encryption failed: " << encrypted.error << std::endl;
             return;
         }
-    }
-    
-    // Write encrypted file with metadata
-    @cpp {
+        
+        // Write encrypted file with metadata
         std::ofstream file(filename, std::ios::binary);
         if (!file) {
             std::cerr << "Failed to open file: " << filename << std::endl;
@@ -560,8 +560,11 @@ pub fn exportObjectEncrypted(obj: SlateObject, filename: string, password: strin
 }
 
 pub fn importObjectEncrypted(filename: string, password: string) -> SlateObject {
-    // Create encrypted result directly in C++ to avoid namespace issues
     @cpp {
+        // Import Crypto functions directly
+        using Crypto::CryptoResult;
+        using Crypto::decrypt;
+        
         CryptoResult encrypted;
         
         std::ifstream file(filename, std::ios::binary);

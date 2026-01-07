@@ -702,17 +702,21 @@ void exportObjectEncrypted(SlateObject obj, std::string filename, std::string pa
             writer.writeValue(value);
         }
     
-    auto plainData = writer.data;
-    auto encrypted = Crypto::encrypt(plainData, password);
-    if ((!encrypted.success)) {
-        // Inline C++ code:
-
-            std::cerr << "Encryption failed: " << encrypted.error << std::endl;
-            return;
-        
-    }
     // Inline C++ code:
 
+        // Import Crypto functions directly
+        using Crypto::CryptoResult;
+        using Crypto::encrypt;
+        
+        // Encrypt data
+        CryptoResult encrypted = encrypt(writer.data, password);
+        
+        if (!encrypted.success) {
+            std::cerr << "Encryption failed: " << encrypted.error << std::endl;
+            return;
+        }
+        
+        // Write encrypted file with metadata
         std::ofstream file(filename, std::ios::binary);
         if (!file) {
             std::cerr << "Failed to open file: " << filename << std::endl;
@@ -759,6 +763,10 @@ void exportObjectEncrypted(SlateObject obj, std::string filename, std::string pa
 SlateObject importObjectEncrypted(std::string filename, std::string password) {
     // Inline C++ code:
 
+        // Import Crypto functions directly
+        using Crypto::CryptoResult;
+        using Crypto::decrypt;
+        
         CryptoResult encrypted;
         
         std::ifstream file(filename, std::ios::binary);
