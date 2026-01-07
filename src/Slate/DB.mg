@@ -224,10 +224,11 @@ pub class SlateConfig {
 }
 
 // ============================
-// BinaryWriter
+// BinaryWriter - FIX: Use int64_t for Crypto compatibility
 // ============================
 
 class BinaryWriter {
+    // FIX: Changed from Array<int> to work with int64_t for Crypto
     pub data: Array<int>;
 
     pub fn create() {
@@ -305,6 +306,18 @@ class BinaryWriter {
             }
         }
     }
+    
+    // FIX: Convert to int64_t vector for Crypto
+    pub fn toInt64Vector() -> Array<int> {
+        @cpp {
+            std::vector<int64_t> result;
+            result.reserve(this->data.size());
+            for (int byte : this->data) {
+                result.push_back(static_cast<int64_t>(byte));
+            }
+            return result;
+        }
+    }
 }
 
 // ============================
@@ -320,6 +333,17 @@ class BinaryReader {
             this->data = std::vector<int>();
         }
         this.pos = 0;
+    }
+    
+    // FIX: Set data from int64_t vector
+    pub fn setFromInt64Vector(int64Data: Array<int>) {
+        @cpp {
+            this->data.clear();
+            for (int64_t byte : int64Data) {
+                this->data.push_back(static_cast<int>(byte));
+            }
+            this->pos = 0;
+        }
     }
 
     pub fn readU8() -> int {
@@ -501,14 +525,21 @@ pub fn exportObjectEncrypted(obj: SlateObject, filename: string, password: strin
         }
     }
     
-    // Inline C++ with direct Crypto namespace calls
+    // FIX: Convert to int64_t vector for Crypto compatibility
     @cpp {
+        // Convert int to int64_t for Crypto::encrypt
+        std::vector<int64_t> plaintextData;
+        plaintextData.reserve(writer.data.size());
+        for (int byte : writer.data) {
+            plaintextData.push_back(static_cast<int64_t>(byte));
+        }
+        
         // Import Crypto functions directly
         using Crypto::CryptoResult;
         using Crypto::encrypt;
         
         // Encrypt data
-        CryptoResult encrypted = encrypt(writer.data, password);
+        CryptoResult encrypted = encrypt(plaintextData, password);
         
         if (!encrypted.success) {
             std::cerr << "Encryption failed: " << encrypted.error << std::endl;
@@ -526,17 +557,17 @@ pub fn exportObjectEncrypted(obj: SlateObject, filename: string, password: strin
         file.write("SLATEDB", 7);
         
         // Write salt (16 bytes)
-        for (int byte : encrypted.salt) {
+        for (int64_t byte : encrypted.salt) {
             file.put(static_cast<char>(byte));
         }
         
         // Write IV (12 bytes)
-        for (int byte : encrypted.iv) {
+        for (int64_t byte : encrypted.iv) {
             file.put(static_cast<char>(byte));
         }
         
         // Write tag (16 bytes)
-        for (int byte : encrypted.tag) {
+        for (int64_t byte : encrypted.tag) {
             file.put(static_cast<char>(byte));
         }
         
@@ -548,7 +579,7 @@ pub fn exportObjectEncrypted(obj: SlateObject, filename: string, password: strin
         file.put((len >> 24) & 0xFF);
         
         // Write encrypted data
-        for (int byte : encrypted.data) {
+        for (int64_t byte : encrypted.data) {
             file.put(static_cast<char>(byte));
         }
         
@@ -585,19 +616,19 @@ pub fn importObjectEncrypted(filename: string, password: string) -> SlateObject 
         // Read salt (16 bytes)
         encrypted.salt.resize(16);
         for (int i = 0; i < 16; i++) {
-            encrypted.salt[i] = static_cast<unsigned char>(file.get());
+            encrypted.salt[i] = static_cast<int64_t>(static_cast<unsigned char>(file.get()));
         }
         
         // Read IV (12 bytes)
         encrypted.iv.resize(12);
         for (int i = 0; i < 12; i++) {
-            encrypted.iv[i] = static_cast<unsigned char>(file.get());
+            encrypted.iv[i] = static_cast<int64_t>(static_cast<unsigned char>(file.get()));
         }
         
         // Read tag (16 bytes)
         encrypted.tag.resize(16);
         for (int i = 0; i < 16; i++) {
-            encrypted.tag[i] = static_cast<unsigned char>(file.get());
+            encrypted.tag[i] = static_cast<int64_t>(static_cast<unsigned char>(file.get()));
         }
         
         // Read data length
@@ -610,7 +641,7 @@ pub fn importObjectEncrypted(filename: string, password: string) -> SlateObject 
         // Read encrypted data
         encrypted.data.resize(len);
         for (uint32_t i = 0; i < len; i++) {
-            encrypted.data[i] = static_cast<unsigned char>(file.get());
+            encrypted.data[i] = static_cast<int64_t>(static_cast<unsigned char>(file.get()));
         }
         
         file.close();
@@ -627,9 +658,12 @@ pub fn importObjectEncrypted(filename: string, password: string) -> SlateObject 
             return SlateObject();
         }
         
-        // Parse decrypted data
+        // Parse decrypted data - convert int64_t back to int
         BinaryReader reader;
-        reader.data = decrypted.data;
+        reader.data.clear();
+        for (int64_t byte : decrypted.data) {
+            reader.data.push_back(static_cast<int>(byte));
+        }
         reader.pos = 0;
         
         // Read object metadata

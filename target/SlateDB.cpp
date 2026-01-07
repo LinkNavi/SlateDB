@@ -4,8 +4,13 @@
 
     #include <cstring>
 
+// Module-required includes
+#include <openssl/rand.h>
+#include <openssl/evp.h>
+
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <optional>
 #include <iostream>
 #include <string>
@@ -19,24 +24,26 @@
 #include <thread>
 #include <cmath>
 #include <stdexcept>
+#include <cstring>
+#include <unistd.h>
 
-// ============================================================================
+// =======================================================================
 // Auto-generated Standard Library Implementations
-// ============================================================================
+// =======================================================================
 
-// ============================================================================
+// =======================================================================
 // Std.Crypto (Auto-generated from stdlib)
-// ============================================================================
+// =======================================================================
 namespace Crypto {
 
     class CryptoResult {
     public:
         bool success = false;
-        std::vector<int64_t> data = 0;
-        std::string error = "";
-        std::vector<int64_t> iv = 0;
-        std::vector<int64_t> tag = 0;
-        std::vector<int64_t> salt = 0;
+        std::vector<int64_t> data;
+        std::string error;
+        std::vector<int64_t> iv;
+        std::vector<int64_t> tag;
+        std::vector<int64_t> salt;
     };
 
     class KeyConfig {
@@ -46,30 +53,30 @@ namespace Crypto {
     };
 
     inline void create() {
-        // Implementation not found
+        this->data = std::vector<int64_t>();
+                    this->iv = std::vector<int64_t>();
+                    this->tag = std::vector<int64_t>();
+                    this->salt = std::vector<int64_t>();
     }
 
     inline void create() {
         // Implementation not found
     }
 
-    inline KeyConfig standard() {
+    inline KeyConfig standardConfig() {
         // Implementation not found
     }
 
-    inline KeyConfig fast() {
+    inline KeyConfig fastConfig() {
         // Implementation not found
     }
 
-    inline KeyConfig paranoid() {
+    inline KeyConfig paranoidConfig() {
         // Implementation not found
     }
 
     inline std::vector<int64_t> deriveKey(const std::string& password, const std::vector<int64_t>& salt, KeyConfig config) {
-        #include <openssl/evp.h>
-                #include <openssl/rand.h>
-                
-                std::vector<int64_t> key(config.keyLength);
+        std::vector<int64_t> key(config.keyLength);
                 std::vector<unsigned char> saltBytes(salt.size());
                 for (size_t i = 0; i < salt.size(); i++) {
                     saltBytes[i] = static_cast<unsigned char>(salt[i]);
@@ -84,20 +91,18 @@ namespace Crypto {
                     config.keyLength, keyBytes.data()
                 );
                 
-                for (int i = 0; i < config.keyLength; i++) {
+                for (int64_t i = 0; i < config.keyLength; i++) {
                     key[i] = keyBytes[i];
                 }
                 return key;
     }
 
     inline std::vector<int64_t> randomBytes(int64_t count) {
-        #include <openssl/rand.h>
-                
-                std::vector<unsigned char> bytes(count);
+        std::vector<unsigned char> bytes(count);
                 RAND_bytes(bytes.data(), count);
                 
                 std::vector<int64_t> result(count);
-                for (int i = 0; i < count; i++) {
+                for (int64_t i = 0; i < count; i++) {
                     result[i] = bytes[i];
                 }
                 return result;
@@ -112,11 +117,12 @@ namespace Crypto {
     }
 
     inline CryptoResult encrypt(const std::vector<int64_t>& plaintext, const std::string& password) {
-        #include <openssl/evp.h>
-                #include <openssl/rand.h>
-                
-                CryptoResult result;
+        CryptoResult result;
                 result.success = false;
+                result.data = std::vector<int64_t>();
+                result.iv = std::vector<int64_t>();
+                result.tag = std::vector<int64_t>();
+                result.salt = std::vector<int64_t>();
                 
                 // Generate salt and IV
                 std::vector<unsigned char> salt(16);
@@ -194,10 +200,12 @@ namespace Crypto {
     }
 
     inline CryptoResult decrypt(CryptoResult encrypted, const std::string& password) {
-        #include <openssl/evp.h>
-                
-                CryptoResult result;
+        CryptoResult result;
                 result.success = false;
+                result.data = std::vector<int64_t>();
+                result.iv = std::vector<int64_t>();
+                result.tag = std::vector<int64_t>();
+                result.salt = std::vector<int64_t>();
                 
                 if (!encrypted.success || encrypted.data.empty()) {
                     result.error = "Invalid encrypted data";
@@ -275,24 +283,79 @@ namespace Crypto {
                 for (size_t i = 0; i < text.size(); i++) {
                     bytes[i] = static_cast<unsigned char>(text[i]);
                 }
+                return encrypt(bytes, password);
     }
 
     inline std::string decryptToString(CryptoResult encrypted, const std::string& password) {
-        std::string text;
-                text.reserve(result.data.size());
-                for (auto b : result.data) {
-                    text += static_cast<char>(b);
+        CryptoResult decrypted;
+                decrypted.success = false;
+                decrypted.data = std::vector<int64_t>();
+                decrypted.iv = std::vector<int64_t>();
+                decrypted.tag = std::vector<int64_t>();
+                decrypted.salt = std::vector<int64_t>();
+                
+                if (!encrypted.success || encrypted.data.empty()) {
+                    return "";
+                }
+                
+                // Convert arrays
+                std::vector<unsigned char> salt(encrypted.salt.size());
+                std::vector<unsigned char> iv(encrypted.iv.size());
+                std::vector<unsigned char> tag(encrypted.tag.size());
+                std::vector<unsigned char> cipher(encrypted.data.size());
+                
+                for (size_t i = 0; i < encrypted.salt.size(); i++) salt[i] = encrypted.salt[i];
+                for (size_t i = 0; i < encrypted.iv.size(); i++) iv[i] = encrypted.iv[i];
+                for (size_t i = 0; i < encrypted.tag.size(); i++) tag[i] = encrypted.tag[i];
+                for (size_t i = 0; i < encrypted.data.size(); i++) cipher[i] = encrypted.data[i];
+                
+                // Derive key
+                std::vector<unsigned char> key(32);
+                PKCS5_PBKDF2_HMAC(
+                    password.c_str(), password.length(),
+                    salt.data(), salt.size(),
+                    100000, EVP_sha256(),
+                    32, key.data()
+                );
+                
+                // Setup decryption
+                EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
+                if (!ctx) return "";
+                
+                if (EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), nullptr, key.data(), iv.data()) != 1) {
+                    EVP_CIPHER_CTX_free(ctx);
+                    return "";
+                }
+                
+                // Decrypt
+                std::vector<unsigned char> plain(cipher.size());
+                int len = 0, plainLen = 0;
+                
+                if (EVP_DecryptUpdate(ctx, plain.data(), &len, cipher.data(), cipher.size()) != 1) {
+                    EVP_CIPHER_CTX_free(ctx);
+                    return "";
+                }
+                plainLen = len;
+                
+                EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, tag.data());
+                
+                if (EVP_DecryptFinal_ex(ctx, plain.data() + len, &len) != 1) {
+                    EVP_CIPHER_CTX_free(ctx);
+                    return "";
+                }
+                plainLen += len;
+                EVP_CIPHER_CTX_free(ctx);
+                
+                std::string text;
+                text.reserve(plainLen);
+                for (int i = 0; i < plainLen; i++) {
+                    text += static_cast<char>(plain[i]);
                 }
                 return text;
     }
 
     inline std::string hashPassword(const std::string& password) {
-        #include <openssl/evp.h>
-                #include <openssl/rand.h>
-                #include <sstream>
-                #include <iomanip>
-                
-                // Generate salt
+        // Generate salt
                 std::vector<unsigned char> salt(16);
                 RAND_bytes(salt.data(), 16);
                 
@@ -314,9 +377,7 @@ namespace Crypto {
     }
 
     inline bool verifyPassword(const std::string& password, const std::string& hash) {
-        #include <openssl/evp.h>
-                
-                // Parse hash format: salt$hash
+        // Parse hash format: salt$hash
                 size_t delim = hash.find('$');
                 if (delim == std::string::npos || delim != 32) return false;
                 
@@ -347,24 +408,24 @@ namespace Crypto {
 
 } // namespace Crypto
 
-// ============================================================================
+// =======================================================================
 // Std.Map (Auto-generated from stdlib)
-// ============================================================================
+// =======================================================================
 namespace Map {
 
-    inline int64_t size(Map<any map) {
-        return map.size();
+    inline int64_t sizeStrStr(const std::unordered_map<std::string, std::string>& map) {
+        return static_cast<int64_t>(map.size());
     }
 
-    inline bool isEmpty(Map<any map) {
+    inline bool isEmptyStrStr(const std::unordered_map<std::string, std::string>& map) {
         return map.empty();
     }
 
-    inline void clear(Map<any map) {
+    inline void clearStrStr(const std::unordered_map<std::string, std::string>& map) {
         map.clear();
     }
 
-    inline Option<any> get(Map<any map, any key) {
+    inline std::optional<std::string> getStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key) {
         auto it = map.find(key);
                 if (it != map.end()) {
                     return std::make_optional(it->second);
@@ -372,7 +433,7 @@ namespace Map {
                 return std::nullopt;
     }
 
-    inline any getOr(Map<any map, any key, any defaultVal) {
+    inline std::string getOrStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key, const std::string& defaultVal) {
         auto it = map.find(key);
                 if (it != map.end()) {
                     return it->second;
@@ -380,19 +441,19 @@ namespace Map {
                 return defaultVal;
     }
 
-    inline bool contains(Map<any map, any key) {
+    inline bool containsStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key) {
         return map.find(key) != map.end();
     }
 
-    inline void insert(Map<any map, any key, any value) {
+    inline void insertStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key, const std::string& value) {
         map[key] = value;
     }
 
-    inline void set(Map<any map, any key, any value) {
+    inline void setStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key, const std::string& value) {
         map[key] = value;
     }
 
-    inline bool remove(Map<any map, any key) {
+    inline bool removeStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key) {
         auto it = map.find(key);
                 if (it != map.end()) {
                     map.erase(it);
@@ -401,23 +462,8 @@ namespace Map {
                 return false;
     }
 
-    inline any) update(Map<any map, any key, fn(any f) {
-        auto it = map.find(key);
-                if (it != map.end()) {
-                    it->second = f(it->second);
-                }
-    }
-
-    inline bool insertIfAbsent(Map<any map, any key, any value) {
-        if (map.find(key) == map.end()) {
-                    map[key] = value;
-                    return true;
-                }
-                return false;
-    }
-
-    inline Array<any> keys(Map<any map) {
-        std::vector<decltype(map)::key_type> result;
+    inline std::vector<std::string> keysStrStr(const std::unordered_map<std::string, std::string>& map) {
+        std::vector<std::string> result;
                 result.reserve(map.size());
                 for (const auto& pair : map) {
                     result.push_back(pair.first);
@@ -425,8 +471,8 @@ namespace Map {
                 return result;
     }
 
-    inline Array<any> values(Map<any map) {
-        std::vector<decltype(map)::mapped_type> result;
+    inline std::vector<std::string> valuesStrStr(const std::unordered_map<std::string, std::string>& map) {
+        std::vector<std::string> result;
                 result.reserve(map.size());
                 for (const auto& pair : map) {
                     result.push_back(pair.second);
@@ -434,379 +480,438 @@ namespace Map {
                 return result;
     }
 
-    inline Array<Array<any>> entries(Map<any map) {
-        std::vector<std::pair<decltype(map)::key_type, decltype(map)::mapped_type>> result;
+    inline int64_t sizeStrInt(const std::unordered_map<std::string, int64_t>& map) {
+        return static_cast<int64_t>(map.size());
+    }
+
+    inline bool isEmptyStrInt(const std::unordered_map<std::string, int64_t>& map) {
+        return map.empty();
+    }
+
+    inline void clearStrInt(const std::unordered_map<std::string, int64_t>& map) {
+        map.clear();
+    }
+
+    inline std::optional<int64_t> getStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
+        auto it = map.find(key);
+                if (it != map.end()) {
+                    return std::make_optional(it->second);
+                }
+                return std::nullopt;
+    }
+
+    inline int64_t getOrStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key, int64_t defaultVal) {
+        auto it = map.find(key);
+                if (it != map.end()) {
+                    return it->second;
+                }
+                return defaultVal;
+    }
+
+    inline bool containsStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
+        return map.find(key) != map.end();
+    }
+
+    inline void insertStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key, int64_t value) {
+        map[key] = value;
+    }
+
+    inline void setStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key, int64_t value) {
+        map[key] = value;
+    }
+
+    inline bool removeStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
+        auto it = map.find(key);
+                if (it != map.end()) {
+                    map.erase(it);
+                    return true;
+                }
+                return false;
+    }
+
+    inline std::vector<std::string> keysStrInt(const std::unordered_map<std::string, int64_t>& map) {
+        std::vector<std::string> result;
                 result.reserve(map.size());
                 for (const auto& pair : map) {
-                    result.push_back(pair);
+                    result.push_back(pair.first);
                 }
                 return result;
     }
 
-    inline any) -> Map<any, any> mapValues(Map<any map, fn(any f) {
-        std::unordered_map<decltype(map)::key_type, decltype(f(map.begin()->second))> result;
+    inline std::vector<int64_t> valuesStrInt(const std::unordered_map<std::string, int64_t>& map) {
+        std::vector<int64_t> result;
+                result.reserve(map.size());
                 for (const auto& pair : map) {
-                    result[pair.first] = f(pair.second);
+                    result.push_back(pair.second);
                 }
                 return result;
     }
 
-    inline bool) -> Map<any, any> filterMap(Map<any map, fn(any predicate) {
-        decltype(map) result;
+    inline void incrementStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
+        map[key]++;
+    }
+
+    inline void decrementStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
+        map[key]--;
+    }
+
+    inline int64_t sizeIntInt(const std::unordered_map<int64_t, int64_t>& map) {
+        return static_cast<int64_t>(map.size());
+    }
+
+    inline bool isEmptyIntInt(const std::unordered_map<int64_t, int64_t>& map) {
+        return map.empty();
+    }
+
+    inline std::optional<int64_t> getIntInt(const std::unordered_map<int64_t, int64_t>& map, int64_t key) {
+        auto it = map.find(key);
+                if (it != map.end()) {
+                    return std::make_optional(it->second);
+                }
+                return std::nullopt;
+    }
+
+    inline int64_t getOrIntInt(const std::unordered_map<int64_t, int64_t>& map, int64_t key, int64_t defaultVal) {
+        auto it = map.find(key);
+                if (it != map.end()) {
+                    return it->second;
+                }
+                return defaultVal;
+    }
+
+    inline bool containsIntInt(const std::unordered_map<int64_t, int64_t>& map, int64_t key) {
+        return map.find(key) != map.end();
+    }
+
+    inline void insertIntInt(const std::unordered_map<int64_t, int64_t>& map, int64_t key, int64_t value) {
+        map[key] = value;
+    }
+
+    inline bool removeIntInt(const std::unordered_map<int64_t, int64_t>& map, int64_t key) {
+        auto it = map.find(key);
+                if (it != map.end()) {
+                    map.erase(it);
+                    return true;
+                }
+                return false;
+    }
+
+    inline std::vector<int64_t> keysIntInt(const std::unordered_map<int64_t, int64_t>& map) {
+        std::vector<int64_t> result;
+                result.reserve(map.size());
                 for (const auto& pair : map) {
-                    if (predicate(pair.first, pair.second)) {
-                        result[pair.first] = pair.second;
-                    }
+                    result.push_back(pair.first);
                 }
                 return result;
     }
 
-    inline Map<any, any> merge(Map<any a, Map<any b) {
-        auto result = a;
-                for (const auto& pair : b) {
-                    result[pair.first] = pair.second;
-                }
-                return result;
-    }
-
-    inline any) -> Map<any, any> mergeWith(Map<any a, Map<any b, fn(any f) {
-        auto result = a;
-                for (const auto& pair : b) {
-                    auto it = result.find(pair.first);
-                    if (it != result.end()) {
-                        it->second = f(it->second, pair.second);
-                    } else {
-                        result[pair.first] = pair.second;
-                    }
-                }
-                return result;
-    }
-
-    inline Map<any, any> fromEntries(Array<Array<any>> entries) {
-        std::unordered_map<decltype(entries[0][0]), decltype(entries[0][1])> result;
-                for (const auto& entry : entries) {
-                    if (entry.size() >= 2) {
-                        result[entry[0]] = entry[1];
-                    }
-                }
-                return result;
-    }
-
-    inline Map<any, any> invert(Map<any map) {
-        std::unordered_map<decltype(map)::mapped_type, decltype(map)::key_type> result;
+    inline std::vector<int64_t> valuesIntInt(const std::unordered_map<int64_t, int64_t>& map) {
+        std::vector<int64_t> result;
+                result.reserve(map.size());
                 for (const auto& pair : map) {
-                    result[pair.second] = pair.first;
+                    result.push_back(pair.second);
                 }
                 return result;
     }
 
-    inline any) -> Map<any, int> countBy(Array<any> arr, fn(any keyFn) {
-        std::unordered_map<decltype(keyFn(arr[0])), int> result;
-                for (const auto& item : arr) {
-                    result[keyFn(item)]++;
-                }
-                return result;
+    inline int64_t sizeIntStr(const std::unordered_map<int64_t, std::string>& map) {
+        return static_cast<int64_t>(map.size());
     }
 
-    inline any) -> Map<any, Array<any>> groupBy(Array<any> arr, fn(any keyFn) {
-        std::unordered_map<decltype(keyFn(arr[0])), std::vector<decltype(arr)::value_type>> result;
-                for (const auto& item : arr) {
-                    result[keyFn(item)].push_back(item);
+    inline std::optional<std::string> getIntStr(const std::unordered_map<int64_t, std::string>& map, int64_t key) {
+        auto it = map.find(key);
+                if (it != map.end()) {
+                    return std::make_optional(it->second);
                 }
-                return result;
+                return std::nullopt;
+    }
+
+    inline std::string getOrIntStr(const std::unordered_map<int64_t, std::string>& map, int64_t key, const std::string& defaultVal) {
+        auto it = map.find(key);
+                if (it != map.end()) {
+                    return it->second;
+                }
+                return defaultVal;
+    }
+
+    inline bool containsIntStr(const std::unordered_map<int64_t, std::string>& map, int64_t key) {
+        return map.find(key) != map.end();
+    }
+
+    inline void insertIntStr(const std::unordered_map<int64_t, std::string>& map, int64_t key, const std::string& value) {
+        map[key] = value;
+    }
+
+    inline bool removeIntStr(const std::unordered_map<int64_t, std::string>& map, int64_t key) {
+        auto it = map.find(key);
+                if (it != map.end()) {
+                    map.erase(it);
+                    return true;
+                }
+                return false;
     }
 
 } // namespace Map
 
-// ============================================================================
+// =======================================================================
 // Std.Array (Auto-generated from stdlib)
-// ============================================================================
+// =======================================================================
 namespace Array {
 
-    inline int64_t length(Array<any> arr) {
-        return arr.size();
+    inline int64_t lengthInt(const std::vector<int64_t>& arr) {
+        return static_cast<int64_t>(arr.size());
     }
 
-    inline bool isEmpty(Array<any> arr) {
+    inline int64_t lengthStr(const std::vector<std::string>& arr) {
+        return static_cast<int64_t>(arr.size());
+    }
+
+    inline bool isEmptyInt(const std::vector<int64_t>& arr) {
         return arr.empty();
     }
 
-    inline int64_t capacity(Array<any> arr) {
-        return arr.capacity();
+    inline bool isEmptyStr(const std::vector<std::string>& arr) {
+        return arr.empty();
     }
 
-    inline Option<any> get(Array<any> arr, int64_t index) {
-        if (index >= 0 && index < static_cast<int>(arr.size())) {
-                    return std::make_optional(arr[index]);
-                }
-                return std::nullopt;
+    inline void pushInt(const std::vector<int64_t>& arr, int64_t value) {
+        arr.push_back(value);
     }
 
-    inline Option<any> first(Array<any> arr) {
-        // Implementation not found
+    inline void pushStr(const std::vector<std::string>& arr, const std::string& value) {
+        arr.push_back(value);
     }
 
-    inline Option<any> last(Array<any> arr) {
-        // Implementation not found
-    }
-
-    inline void push(Array<any> arr, any item) {
-        arr.push_back(item);
-    }
-
-    inline Option<any> pop(Array<any> arr) {
-        if (arr.empty()) return std::nullopt;
-                auto item = arr.back();
+    inline int64_t popInt(const std::vector<int64_t>& arr) {
+        auto v = arr.back();
                 arr.pop_back();
-                return std::make_optional(item);
+                return v;
     }
 
-    inline void insert(Array<any> arr, int64_t index, any item) {
-        arr.insert(arr.begin() + index, item);
+    inline std::string popStr(const std::vector<std::string>& arr) {
+        auto v = arr.back();
+                arr.pop_back();
+                return v;
     }
 
-    inline Option<any> removeAt(Array<any> arr, int64_t index) {
-        if (index < 0 || index >= static_cast<int>(arr.size())) {
-                    return std::nullopt;
+    inline std::optional<int64_t> firstInt(const std::vector<int64_t>& arr) {
+        if (arr.empty()) return std::nullopt;
+                return arr.front();
+    }
+
+    inline std::optional<std::string> firstStr(const std::vector<std::string>& arr) {
+        if (arr.empty()) return std::nullopt;
+                return arr.front();
+    }
+
+    inline std::optional<int64_t> lastInt(const std::vector<int64_t>& arr) {
+        if (arr.empty()) return std::nullopt;
+                return arr.back();
+    }
+
+    inline std::optional<std::string> lastStr(const std::vector<std::string>& arr) {
+        if (arr.empty()) return std::nullopt;
+                return arr.back();
+    }
+
+    inline std::optional<int64_t> getInt(const std::vector<int64_t>& arr, int64_t index) {
+        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return std::nullopt;
+                return arr[static_cast<size_t>(index)];
+    }
+
+    inline std::optional<std::string> getStr(const std::vector<std::string>& arr, int64_t index) {
+        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return std::nullopt;
+                return arr[static_cast<size_t>(index)];
+    }
+
+    inline bool setInt(const std::vector<int64_t>& arr, int64_t index, int64_t value) {
+        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return false;
+                arr[static_cast<size_t>(index)] = value;
+                return true;
+    }
+
+    inline bool setStr(const std::vector<std::string>& arr, int64_t index, const std::string& value) {
+        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return false;
+                arr[static_cast<size_t>(index)] = value;
+                return true;
+    }
+
+    inline std::vector<int64_t> sliceInt(const std::vector<int64_t>& arr, int64_t start, int64_t end) {
+        std::vector<int64_t> result;
+                int64_t s = start < 0 ? 0 : start;
+                int64_t e = end > static_cast<int64_t>(arr.size()) ? arr.size() : end;
+                for (int64_t i = s; i < e; i++) {
+                    result.push_back(arr[i]);
                 }
-                auto item = arr[index];
-                arr.erase(arr.begin() + index);
-                return std::make_optional(item);
+                return result;
     }
 
-    inline void clear(Array<any> arr) {
-        arr.clear();
-    }
-
-    inline void resize(Array<any> arr, int64_t newSize) {
-        arr.resize(newSize);
-    }
-
-    inline void reserve(Array<any> arr, int64_t capacity) {
-        arr.reserve(capacity);
-    }
-
-    inline bool contains(Array<any> arr, any item) {
-        return std::find(arr.begin(), arr.end(), item) != arr.end();
-    }
-
-    inline Option<int> indexOf(Array<any> arr, any item) {
-        auto it = std::find(arr.begin(), arr.end(), item);
-                if (it != arr.end()) {
-                    return std::make_optional(static_cast<int>(std::distance(arr.begin(), it)));
+    inline std::vector<std::string> sliceStr(const std::vector<std::string>& arr, int64_t start, int64_t end) {
+        std::vector<std::string> result;
+                int64_t s = start < 0 ? 0 : start;
+                int64_t e = end > static_cast<int64_t>(arr.size()) ? arr.size() : end;
+                for (int64_t i = s; i < e; i++) {
+                    result.push_back(arr[i]);
                 }
-                return std::nullopt;
+                return result;
     }
 
-    inline Option<int> lastIndexOf(Array<any> arr, any item) {
-        for (int i = arr.size() - 1; i >= 0; i--) {
-                    if (arr[i] == item) {
-                        return std::make_optional(i);
-                    }
-                }
-                return std::nullopt;
-    }
-
-    inline int64_t count(Array<any> arr, any item) {
-        return std::count(arr.begin(), arr.end(), item);
-    }
-
-    inline void reverse(Array<any> arr) {
-        std::reverse(arr.begin(), arr.end());
-    }
-
-    inline void sort(Array<any> arr) {
-        std::sort(arr.begin(), arr.end());
-    }
-
-    inline void sortDesc(Array<any> arr) {
-        std::sort(arr.begin(), arr.end(), std::greater<>());
-    }
-
-    inline void shuffle(Array<any> arr) {
-        static std::random_device rd;
-                static std::mt19937 g(rd());
-                std::shuffle(arr.begin(), arr.end(), g);
-    }
-
-    inline Array<any> slice(Array<any> arr, int64_t start, int64_t endIdx) {
-        if (start < 0) start = 0;
-                if (endIdx > static_cast<int>(arr.size())) endIdx = arr.size();
-                return std::vector<decltype(arr)::value_type>(arr.begin() + start, arr.begin() + endIdx);
-    }
-
-    inline Array<any> concat(Array<any> a, Array<any> b) {
-        auto result = a;
+    inline std::vector<int64_t> concatInt(const std::vector<int64_t>& a, const std::vector<int64_t>& b) {
+        std::vector<int64_t> result = a;
                 result.insert(result.end(), b.begin(), b.end());
                 return result;
     }
 
-    inline Array<any> flatten(Array<Array<any>> arr) {
-        std::vector<typename decltype(arr)::value_type::value_type> result;
-                for (const auto& inner : arr) {
-                    result.insert(result.end(), inner.begin(), inner.end());
+    inline std::vector<std::string> concatStr(const std::vector<std::string>& a, const std::vector<std::string>& b) {
+        std::vector<std::string> result = a;
+                result.insert(result.end(), b.begin(), b.end());
+                return result;
+    }
+
+    inline std::vector<int64_t> reverseInt(const std::vector<int64_t>& arr) {
+        std::vector<int64_t> result = arr;
+                std::reverse(result.begin(), result.end());
+                return result;
+    }
+
+    inline std::vector<std::string> reverseStr(const std::vector<std::string>& arr) {
+        std::vector<std::string> result = arr;
+                std::reverse(result.begin(), result.end());
+                return result;
+    }
+
+    inline bool containsInt(const std::vector<int64_t>& arr, int64_t value) {
+        return std::find(arr.begin(), arr.end(), value) != arr.end();
+    }
+
+    inline bool containsStr(const std::vector<std::string>& arr, const std::string& value) {
+        return std::find(arr.begin(), arr.end(), value) != arr.end();
+    }
+
+    inline std::optional<int64_t> indexOfInt(const std::vector<int64_t>& arr, int64_t value) {
+        auto it = std::find(arr.begin(), arr.end(), value);
+                if (it == arr.end()) return std::nullopt;
+                return static_cast<int64_t>(std::distance(arr.begin(), it));
+    }
+
+    inline std::optional<int64_t> indexOfStr(const std::vector<std::string>& arr, const std::string& value) {
+        auto it = std::find(arr.begin(), arr.end(), value);
+                if (it == arr.end()) return std::nullopt;
+                return static_cast<int64_t>(std::distance(arr.begin(), it));
+    }
+
+    inline void clearInt(const std::vector<int64_t>& arr) {
+        arr.clear();
+    }
+
+    inline void clearStr(const std::vector<std::string>& arr) {
+        arr.clear();
+    }
+
+    inline std::vector<int64_t> filled(int64_t size, int64_t value) {
+        return std::vector<int64_t>(static_cast<size_t>(size), static_cast<int64_t>(value));
+    }
+
+    inline std::vector<int64_t> zeros(int64_t size) {
+        return std::vector<int64_t>(static_cast<size_t>(size), 0);
+    }
+
+    inline std::vector<int64_t> ones(int64_t size) {
+        return std::vector<int64_t>(static_cast<size_t>(size), 1);
+    }
+
+    inline std::vector<int64_t> range(int64_t start, int64_t end) {
+        std::vector<int64_t> result;
+                for (int64_t i = start; i < end; i++) {
+                    result.push_back(i);
                 }
                 return result;
     }
 
-    inline Array<any> dedupe(Array<any> arr) {
-        auto result = arr;
+    inline int64_t sum(const std::vector<int64_t>& arr) {
+        int64_t total = 0;
+                for (auto v : arr) total += v;
+                return total;
+    }
+
+    inline std::optional<int64_t> min(const std::vector<int64_t>& arr) {
+        if (arr.empty()) return std::nullopt;
+                return *std::min_element(arr.begin(), arr.end());
+    }
+
+    inline std::optional<int64_t> max(const std::vector<int64_t>& arr) {
+        if (arr.empty()) return std::nullopt;
+                return *std::max_element(arr.begin(), arr.end());
+    }
+
+    inline std::vector<int64_t> sort(const std::vector<int64_t>& arr) {
+        std::vector<int64_t> result = arr;
+                std::sort(result.begin(), result.end());
+                return result;
+    }
+
+    inline std::vector<int64_t> sortDesc(const std::vector<int64_t>& arr) {
+        std::vector<int64_t> result = arr;
+                std::sort(result.begin(), result.end(), std::greater<int64_t>());
+                return result;
+    }
+
+    inline std::vector<int64_t> unique(const std::vector<int64_t>& arr) {
+        std::vector<int64_t> result = arr;
                 std::sort(result.begin(), result.end());
                 result.erase(std::unique(result.begin(), result.end()), result.end());
                 return result;
     }
 
-    inline any) -> Array<any> map(Array<any> arr, fn(any f) {
-        std::vector<decltype(f(arr[0]))> result;
-                result.reserve(arr.size());
-                for (const auto& item : arr) {
-                    result.push_back(f(item));
-                }
+    inline std::vector<std::string> sortStr(const std::vector<std::string>& arr) {
+        std::vector<std::string> result = arr;
+                std::sort(result.begin(), result.end());
                 return result;
     }
 
-    inline bool) -> Array<any> filter(Array<any> arr, fn(any predicate) {
-        std::vector<decltype(arr)::value_type> result;
-                for (const auto& item : arr) {
-                    if (predicate(item)) {
-                        result.push_back(item);
-                    }
-                }
-                return result;
-    }
-
-    inline any) -> any reduce(Array<any> arr, any initial, fn(any f) {
-        auto acc = initial;
-                for (const auto& item : arr) {
-                    acc = f(acc, item);
-                }
-                return acc;
-    }
-
-    inline bool) -> Option<any> find(Array<any> arr, fn(any predicate) {
-        for (const auto& item : arr) {
-                    if (predicate(item)) {
-                        return std::make_optional(item);
-                    }
-                }
-                return std::nullopt;
-    }
-
-    inline bool) -> Option<int> findIndex(Array<any> arr, fn(any predicate) {
-        for (size_t i = 0; i < arr.size(); i++) {
-                    if (predicate(arr[i])) {
-                        return std::make_optional(static_cast<int>(i));
-                    }
-                }
-                return std::nullopt;
-    }
-
-    inline bool) -> bool any(Array<any> arr, fn(any predicate) {
-        return std::any_of(arr.begin(), arr.end(), predicate);
-    }
-
-    inline bool) -> bool all(Array<any> arr, fn(any predicate) {
-        return std::all_of(arr.begin(), arr.end(), predicate);
-    }
-
-    inline bool) -> bool none(Array<any> arr, fn(any predicate) {
-        return std::none_of(arr.begin(), arr.end(), predicate);
-    }
-
-    inline int64_t sum(const std::vector<int64_t>& arr) {
-        return std::accumulate(arr.begin(), arr.end(), 0);
-    }
-
-    inline double sumf(Array<float> arr) {
-        return std::accumulate(arr.begin(), arr.end(), 0.0);
-    }
-
-    inline Option<int> minVal(const std::vector<int64_t>& arr) {
-        if (arr.empty()) return std::nullopt;
-                return std::make_optional(*std::min_element(arr.begin(), arr.end()));
-    }
-
-    inline Option<int> maxVal(const std::vector<int64_t>& arr) {
-        if (arr.empty()) return std::nullopt;
-                return std::make_optional(*std::max_element(arr.begin(), arr.end()));
-    }
-
-    inline std::vector<int64_t> range(int64_t start, int64_t endVal) {
-        std::vector<int> result;
-                for (int i = start; i < endVal; i++) {
-                    result.push_back(i);
-                }
-                return result;
-    }
-
-    inline std::vector<int64_t> rangeStep(int64_t start, int64_t endVal, int64_t step) {
-        std::vector<int> result;
-                for (int i = start; i < endVal; i += step) {
-                    result.push_back(i);
-                }
-                return result;
-    }
-
-    inline Array<any> filled(int64_t size, any value) {
-        return std::vector<decltype(value)>(size, value);
-    }
-
-    inline std::vector<int64_t> zeros(int64_t size) {
-        return std::vector<int>(size, 0);
-    }
-
-    inline std::vector<int64_t> ones(int64_t size) {
-        return std::vector<int>(size, 1);
-    }
-
-    inline Array<Array<any>> zip(Array<any> a, Array<any> b) {
-        std::vector<std::vector<decltype(a)::value_type>> result;
-                size_t len = std::min(a.size(), b.size());
-                for (size_t i = 0; i < len; i++) {
-                    result.push_back({a[i], b[i]});
-                }
-                return result;
-    }
-
-    inline Array<Array<any>> enumerate(Array<any> arr) {
-        std::vector<std::pair<int, decltype(arr)::value_type>> result;
-                for (size_t i = 0; i < arr.size(); i++) {
-                    result.push_back({static_cast<int>(i), arr[i]});
-                }
+    inline std::vector<std::string> uniqueStr(const std::vector<std::string>& arr) {
+        std::vector<std::string> result = arr;
+                std::sort(result.begin(), result.end());
+                result.erase(std::unique(result.begin(), result.end()), result.end());
                 return result;
     }
 
 } // namespace Array
 
-// ============================================================================
+// =======================================================================
 // Std.String (Auto-generated from stdlib)
-// ============================================================================
+// =======================================================================
 namespace String {
 
     inline int64_t length(const std::string& s) {
-        return s.length();
+        return static_cast<int64_t>(s.length());
     }
 
     inline bool isEmpty(const std::string& s) {
         return s.empty();
     }
 
-    inline std::string charAt(const std::string& s, int64_t index) {
-        return std::string(1, s[index]);
+    inline std::optional<std::string> charAt(const std::string& s, int64_t index) {
+        if (index < 0 || static_cast<size_t>(index) >= s.length()) return std::nullopt;
+                return std::string(1, s[static_cast<size_t>(index)]);
     }
 
-    inline int64_t charCodeAt(const std::string& s, int64_t index) {
-        return static_cast<int>(s[index]);
+    inline std::string substring(const std::string& s, int64_t start, int64_t end) {
+        int64_t st = start;
+                int64_t en = end;
+                if (st < 0) st = 0;
+                if (en > static_cast<int64_t>(s.length())) en = s.length();
+                if (st >= en) return "";
+                return s.substr(static_cast<size_t>(st), static_cast<size_t>(en - st));
     }
 
-    inline std::string fromCharCode(int64_t code) {
-        return std::string(1, static_cast<char>(code));
-    }
-
-    inline std::string toLower(const std::string& s) {
-        std::string result = s;
-                std::transform(result.begin(), result.end(), result.begin(), ::tolower);
-                return result;
+    inline std::string slice(const std::string& s, int64_t start, int64_t end) {
+        int64_t st = start;
+                int64_t en = end;
+                if (st < 0) st = 0;
+                if (en > static_cast<int64_t>(s.length())) en = s.length();
+                if (st >= en) return "";
+                return s.substr(static_cast<size_t>(st), static_cast<size_t>(en - st));
     }
 
     inline std::string toUpper(const std::string& s) {
@@ -815,83 +920,55 @@ namespace String {
                 return result;
     }
 
-    inline std::string capitalize(const std::string& s) {
-        // Implementation not found
-    }
-
-    inline std::string titleCase(const std::string& s) {
-        // Implementation not found
+    inline std::string toLower(const std::string& s) {
+        std::string result = s;
+                std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+                return result;
     }
 
     inline std::string trim(const std::string& s) {
-        size_t start = s.find_first_not_of(" \t\n\r\f\v");
+        size_t start = s.find_first_not_of(" \t\n\r");
                 if (start == std::string::npos) return "";
-                size_t end = s.find_last_not_of(" \t\n\r\f\v");
+                size_t end = s.find_last_not_of(" \t\n\r");
                 return s.substr(start, end - start + 1);
     }
 
     inline std::string trimStart(const std::string& s) {
-        size_t start = s.find_first_not_of(" \t\n\r\f\v");
+        size_t start = s.find_first_not_of(" \t\n\r");
                 if (start == std::string::npos) return "";
                 return s.substr(start);
     }
 
     inline std::string trimEnd(const std::string& s) {
-        size_t end = s.find_last_not_of(" \t\n\r\f\v");
+        size_t end = s.find_last_not_of(" \t\n\r");
                 if (end == std::string::npos) return "";
                 return s.substr(0, end + 1);
+    }
+
+    inline bool startsWith(const std::string& s, const std::string& prefix) {
+        if (prefix.length() > s.length()) return false;
+                return s.compare(0, prefix.length(), prefix) == 0;
+    }
+
+    inline bool endsWith(const std::string& s, const std::string& suffix) {
+        if (suffix.length() > s.length()) return false;
+                return s.compare(s.length() - suffix.length(), suffix.length(), suffix) == 0;
     }
 
     inline bool contains(const std::string& s, const std::string& substr) {
         return s.find(substr) != std::string::npos;
     }
 
-    inline bool startsWith(const std::string& s, const std::string& prefix) {
-        return s.size() >= prefix.size() && 
-                       s.compare(0, prefix.size(), prefix) == 0;
-    }
-
-    inline bool endsWith(const std::string& s, const std::string& suffix) {
-        return s.size() >= suffix.size() && 
-                       s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
-    }
-
-    inline Option<int> indexOf(const std::string& s, const std::string& substr) {
+    inline std::optional<int64_t> indexOf(const std::string& s, const std::string& substr) {
         size_t pos = s.find(substr);
-                if (pos != std::string::npos) {
-                    return std::make_optional(static_cast<int>(pos));
-                }
-                return std::nullopt;
+                if (pos == std::string::npos) return std::nullopt;
+                return static_cast<int64_t>(pos);
     }
 
-    inline Option<int> lastIndexOf(const std::string& s, const std::string& substr) {
+    inline std::optional<int64_t> lastIndexOf(const std::string& s, const std::string& substr) {
         size_t pos = s.rfind(substr);
-                if (pos != std::string::npos) {
-                    return std::make_optional(static_cast<int>(pos));
-                }
-                return std::nullopt;
-    }
-
-    inline int64_t count(const std::string& s, const std::string& substr) {
-        int count = 0;
-                size_t pos = 0;
-                while ((pos = s.find(substr, pos)) != std::string::npos) {
-                    count++;
-                    pos += substr.length();
-                }
-                return count;
-    }
-
-    inline std::string substring(const std::string& s, int64_t start) {
-        return s.substr(start);
-    }
-
-    inline std::string substringLen(const std::string& s, int64_t start, int64_t len) {
-        return s.substr(start, len);
-    }
-
-    inline std::string slice(const std::string& s, int64_t start, int64_t endIdx) {
-        return s.substr(start, endIdx - start);
+                if (pos == std::string::npos) return std::nullopt;
+                return static_cast<int64_t>(pos);
     }
 
     inline std::string replace(const std::string& s, const std::string& from, const std::string& to) {
@@ -914,11 +991,20 @@ namespace String {
     }
 
     inline std::string remove(const std::string& s, const std::string& substr) {
-        // Implementation not found
+        std::string result = s;
+                size_t pos = 0;
+                while ((pos = result.find(substr, pos)) != std::string::npos) {
+                    result.erase(pos, substr.length());
+                }
+                return result;
     }
 
-    inline Array<string> split(const std::string& s, const std::string& delim) {
+    inline std::vector<std::string> split(const std::string& s, const std::string& delim) {
         std::vector<std::string> result;
+                if (delim.empty()) {
+                    result.push_back(s);
+                    return result;
+                }
                 size_t start = 0;
                 size_t end;
                 while ((end = s.find(delim, start)) != std::string::npos) {
@@ -929,32 +1015,45 @@ namespace String {
                 return result;
     }
 
-    inline Array<string> splitChar(const std::string& s, const std::string& delim) {
+    inline std::vector<std::string> splitChar(const std::string& s, const std::string& delim) {
         std::vector<std::string> result;
-                std::stringstream ss(s);
-                std::string token;
+                if (delim.empty()) {
+                    result.push_back(s);
+                    return result;
+                }
                 char d = delim[0];
-                while (std::getline(ss, token, d)) {
-                    result.push_back(token);
+                size_t start = 0;
+                for (size_t i = 0; i < s.length(); i++) {
+                    if (s[i] == d) {
+                        result.push_back(s.substr(start, i - start));
+                        start = i + 1;
+                    }
+                }
+                result.push_back(s.substr(start));
+                return result;
+    }
+
+    inline std::vector<std::string> splitLines(const std::string& s) {
+        std::vector<std::string> result;
+                std::istringstream stream(s);
+                std::string line;
+                while (std::getline(stream, line)) {
+                    result.push_back(line);
                 }
                 return result;
     }
 
-    inline Array<string> splitLines(const std::string& s) {
-        // Implementation not found
-    }
-
-    inline Array<string> splitWhitespace(const std::string& s) {
+    inline std::vector<std::string> splitWhitespace(const std::string& s) {
         std::vector<std::string> result;
-                std::stringstream ss(s);
+                std::istringstream stream(s);
                 std::string word;
-                while (ss >> word) {
+                while (stream >> word) {
                     result.push_back(word);
                 }
                 return result;
     }
 
-    inline std::string join(Array<string> parts, const std::string& sep) {
+    inline std::string join(const std::vector<std::string>& parts, const std::string& sep) {
         std::string result;
                 for (size_t i = 0; i < parts.size(); i++) {
                     if (i > 0) result += sep;
@@ -966,18 +1065,10 @@ namespace String {
     inline std::string repeat(const std::string& s, int64_t count) {
         std::string result;
                 result.reserve(s.length() * count);
-                for (int i = 0; i < count; i++) {
+                for (int64_t i = 0; i < count; i++) {
                     result += s;
                 }
                 return result;
-    }
-
-    inline std::string padStart(const std::string& s, int64_t targetLen, const std::string& padStr) {
-        // Implementation not found
-    }
-
-    inline std::string padEnd(const std::string& s, int64_t targetLen, const std::string& padStr) {
-        // Implementation not found
     }
 
     inline std::string reverse(const std::string& s) {
@@ -986,73 +1077,160 @@ namespace String {
                 return result;
     }
 
-    inline bool isDigit(const std::string& c) {
-        return !c.empty() && std::isdigit(c[0]);
+    inline std::string padStart(const std::string& s, int64_t length, const std::string& pad) {
+        if (static_cast<int64_t>(s.length()) >= length || pad.empty()) return s;
+                std::string result;
+                int64_t needed = length - s.length();
+                while (static_cast<int64_t>(result.length()) < needed) {
+                    result += pad;
+                }
+                return result.substr(0, needed) + s;
     }
 
-    inline bool isAlpha(const std::string& c) {
-        return !c.empty() && std::isalpha(c[0]);
+    inline std::string padEnd(const std::string& s, int64_t length, const std::string& pad) {
+        if (static_cast<int64_t>(s.length()) >= length || pad.empty()) return s;
+                std::string result = s;
+                while (static_cast<int64_t>(result.length()) < length) {
+                    result += pad;
+                }
+                return result.substr(0, length);
     }
 
-    inline bool isAlphaNum(const std::string& c) {
-        return !c.empty() && std::isalnum(c[0]);
+    inline std::string capitalize(const std::string& s) {
+        if (s.empty()) return s;
+                std::string result = s;
+                result[0] = std::toupper(result[0]);
+                return result;
     }
 
-    inline bool isWhitespace(const std::string& c) {
-        return !c.empty() && std::isspace(c[0]);
+    inline std::string titleCase(const std::string& s) {
+        std::string result = s;
+                bool newWord = true;
+                for (size_t i = 0; i < result.length(); i++) {
+                    if (std::isspace(result[i])) {
+                        newWord = true;
+                    } else if (newWord) {
+                        result[i] = std::toupper(result[i]);
+                        newWord = false;
+                    }
+                }
+                return result;
     }
 
-    inline bool isUpper(const std::string& c) {
-        return !c.empty() && std::isupper(c[0]);
-    }
-
-    inline bool isLower(const std::string& c) {
-        return !c.empty() && std::islower(c[0]);
-    }
-
-    inline Option<int> parseInt(const std::string& s) {
+    inline std::optional<int64_t> parseInt(const std::string& s) {
         try {
                     size_t pos;
-                    int val = std::stoi(s, &pos);
-                    if (pos == s.length()) return std::make_optional(val);
-                    return std::nullopt;
+                    int64_t val = std::stoll(s, &pos);
+                    if (pos != s.length()) return std::nullopt;
+                    return val;
                 } catch (...) {
                     return std::nullopt;
                 }
     }
 
-    inline Option<float> parseFloat(const std::string& s) {
+    inline std::optional<double> parseFloat(const std::string& s) {
         try {
                     size_t pos;
                     double val = std::stod(s, &pos);
-                    if (pos == s.length()) return std::make_optional(val);
-                    return std::nullopt;
+                    if (pos != s.length()) return std::nullopt;
+                    return val;
                 } catch (...) {
                     return std::nullopt;
                 }
     }
 
-    inline Option<bool> parseBool(const std::string& s) {
-        // Implementation not found
+    inline std::optional<bool> parseBool(const std::string& s) {
+        std::string lower = s;
+                std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+                if (lower == "true" || lower == "1" || lower == "yes") return true;
+                if (lower == "false" || lower == "0" || lower == "no") return false;
+                return std::nullopt;
     }
 
-    inline std::string format(const std::string& template, Map<string args) {
-        // Implementation not found
+    inline std::string formatTemplate(const std::string& tmpl, const std::unordered_map<std::string, std::string>& args) {
+        std::string result = tmpl;
+                for (const auto& pair : args) {
+                    std::string placeholder = "{" + pair.first + "}";
+                    size_t pos = 0;
+                    while ((pos = result.find(placeholder, pos)) != std::string::npos) {
+                        result.replace(pos, placeholder.length(), pair.second);
+                        pos += pair.second.length();
+                    }
+                }
+                return result;
     }
 
     inline std::string escapeHtml(const std::string& s) {
-        // Implementation not found
+        std::string result;
+                result.reserve(s.length() * 2);
+                for (char c : s) {
+                    switch (c) {
+                        case '&': result += "&amp;"; break;
+                        case '<': result += "&lt;"; break;
+                        case '>': result += "&gt;"; break;
+                        case '"': result += "&quot;"; break;
+                        case '\'': result += "&#39;"; break;
+                        default: result += c; break;
+                    }
+                }
+                return result;
+            }
+        }
+        
+        pub fn escapeJson(s: string) -> string {
+            @cpp {
+                std::string result;
+                result.reserve(s.length() * 2);
+                for (char c : s) {
+                    switch (c) {
+                        case '\\': result += "\\\\"; break;
+                        case '"': result += "\\\""; break;
+                        case '\n': result += "\\n"; break;
+                        case '\r': result += "\\r"; break;
+                        case '\t': result += "\\t"; break;
+                        default: result += c; break;
+                    }
+                }
+                return result;
     }
 
     inline std::string escapeJson(const std::string& s) {
-        // Implementation not found
+        std::string result;
+                result.reserve(s.length() * 2);
+                for (char c : s) {
+                    switch (c) {
+                        case '\\': result += "\\\\"; break;
+                        case '"': result += "\\\""; break;
+                        case '\n': result += "\\n"; break;
+                        case '\r': result += "\\r"; break;
+                        case '\t': result += "\\t"; break;
+                        default: result += c; break;
+                    }
+                }
+                return result;
+    }
+
+    inline std::vector<std::string> toCharArray(const std::string& s) {
+        std::vector<std::string> result;
+                for (char c : s) {
+                    result.push_back(std::string(1, c));
+                }
+                return result;
+    }
+
+    inline std::string fromCharCodes(const std::vector<int64_t>& codes) {
+        std::string result;
+                for (auto code : codes) {
+                    result += static_cast<char>(code);
+                }
+                return result;
     }
 
 } // namespace String
 
-// ============================================================================
+// =======================================================================
 // Std.File (Auto-generated from stdlib)
-// ============================================================================
+// =======================================================================
 namespace File {
 
     inline bool exists(const std::string& path) {
@@ -1067,21 +1245,12 @@ namespace File {
         return std::filesystem::is_directory(path);
     }
 
-    inline bool isSymlink(const std::string& path) {
-        return std::filesystem::is_symlink(path);
+    inline int64_t size(const std::string& path) {
+        if (!std::filesystem::exists(path)) return -1;
+                return static_cast<int64_t>(std::filesystem::file_size(path));
     }
 
-    inline bool isReadable(const std::string& path) {
-        auto perms = std::filesystem::status(path).permissions();
-                return (perms & std::filesystem::perms::owner_read) != std::filesystem::perms::none;
-    }
-
-    inline bool isWritable(const std::string& path) {
-        auto perms = std::filesystem::status(path).permissions();
-                return (perms & std::filesystem::perms::owner_write) != std::filesystem::perms::none;
-    }
-
-    inline Option<string> readFile(const std::string& path) {
+    inline std::optional<std::string> read(const std::string& path) {
         std::ifstream file(path);
                 if (!file) return std::nullopt;
                 std::stringstream buffer;
@@ -1089,238 +1258,82 @@ namespace File {
                 return buffer.str();
     }
 
-    inline bool writeFile(const std::string& path, const std::string& content) {
+    inline bool write(const std::string& path, const std::string& content) {
         std::ofstream file(path);
                 if (!file) return false;
                 file << content;
                 return true;
     }
 
-    inline bool appendFile(const std::string& path, const std::string& content) {
+    inline bool append(const std::string& path, const std::string& content) {
         std::ofstream file(path, std::ios::app);
                 if (!file) return false;
                 file << content;
                 return true;
     }
 
-    inline Option<Array<string>> readLines(const std::string& path) {
-        std::ifstream file(path);
-                if (!file) return std::nullopt;
-                std::vector<std::string> lines;
-                std::string line;
-                while (std::getline(file, line)) {
-                    lines.push_back(line);
-                }
-                return lines;
-    }
-
-    inline bool writeLines(const std::string& path, Array<string> lines) {
-        std::ofstream file(path);
-                if (!file) return false;
-                for (const auto& line : lines) {
-                    file << line << "\n";
-                }
-                return true;
-    }
-
-    inline Option<Array<int>> readBytes(const std::string& path) {
-        std::ifstream file(path, std::ios::binary);
-                if (!file) return std::nullopt;
-                std::vector<int> bytes;
-                char byte;
-                while (file.get(byte)) {
-                    bytes.push_back(static_cast<unsigned char>(byte));
-                }
-                return bytes;
-    }
-
-    inline bool writeBytes(const std::string& path, const std::vector<int64_t>& bytes) {
-        std::ofstream file(path, std::ios::binary);
-                if (!file) return false;
-                for (int b : bytes) {
-                    file.put(static_cast<char>(b));
-                }
-                return true;
-    }
-
-    inline Option<int> size(const std::string& path) {
-        try {
-                    return std::make_optional(static_cast<int>(std::filesystem::file_size(path)));
-                } catch (...) {
-                    return std::nullopt;
-                }
-    }
-
-    inline Option<int> modifiedTime(const std::string& path) {
-        try {
-                    auto ftime = std::filesystem::last_write_time(path);
-                    auto sctp = std::chrono::time_point_cast<std::chrono::seconds>(
-                        std::chrono::file_clock::to_sys(ftime));
-                    return std::make_optional(static_cast<int>(sctp.time_since_epoch().count()));
-                } catch (...) {
-                    return std::nullopt;
-                }
-    }
-
-    inline bool copy(const std::string& from, const std::string& to) {
-        try {
-                    std::filesystem::copy(from, to, std::filesystem::copy_options::overwrite_existing);
-                    return true;
-                } catch (...) {
-                    return false;
-                }
-    }
-
-    inline bool move(const std::string& from, const std::string& to) {
-        try {
-                    std::filesystem::rename(from, to);
-                    return true;
-                } catch (...) {
-                    return false;
-                }
-    }
-
-    inline bool rename(const std::string& from, const std::string& to) {
-        // Implementation not found
-    }
-
     inline bool remove(const std::string& path) {
-        try {
-                    return std::filesystem::remove(path);
-                } catch (...) {
-                    return false;
-                }
-    }
-
-    inline int64_t removeAll(const std::string& path) {
-        try {
-                    return static_cast<int>(std::filesystem::remove_all(path));
-                } catch (...) {
-                    return 0;
-                }
+        return std::filesystem::remove(path);
     }
 
     inline bool createDir(const std::string& path) {
+        return std::filesystem::create_directories(path);
+    }
+
+    inline bool copy(const std::string& src, const std::string& dst) {
         try {
-                    return std::filesystem::create_directory(path);
+                    std::filesystem::copy(src, dst, std::filesystem::copy_options::overwrite_existing);
+                    return true;
                 } catch (...) {
                     return false;
                 }
     }
 
-    inline bool createDirs(const std::string& path) {
+    inline bool move(const std::string& src, const std::string& dst) {
         try {
-                    return std::filesystem::create_directories(path);
+                    std::filesystem::rename(src, dst);
+                    return true;
                 } catch (...) {
                     return false;
                 }
-    }
-
-    inline Option<Array<string>> listDir(const std::string& path) {
-        try {
-                    std::vector<std::string> entries;
-                    for (const auto& entry : std::filesystem::directory_iterator(path)) {
-                        entries.push_back(entry.path().filename().addString());
-                    }
-                    return entries;
-                } catch (...) {
-                    return std::nullopt;
-                }
-    }
-
-    inline Option<Array<string>> listDirRecursive(const std::string& path) {
-        try {
-                    std::vector<std::string> entries;
-                    for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
-                        entries.push_back(entry.path().addString());
-                    }
-                    return entries;
-                } catch (...) {
-                    return std::nullopt;
-                }
-    }
-
-    inline Array<string> glob(const std::string& path, const std::string& pattern) {
-        std::vector<std::string> matches;
-                try {
-                    for (const auto& entry : std::filesystem::directory_iterator(path)) {
-                        std::string name = entry.path().filename().addString();
-                        // Simple wildcard matching
-                        if (pattern == "*" || name.find(pattern.substr(1)) != std::string::npos) {
-                            matches.push_back(entry.path().addString());
-                        }
-                    }
-                } catch (...) {}
-                return matches;
     }
 
     inline std::string absolutePath(const std::string& path) {
-        return std::filesystem::absolute(path).addString();
+        return std::filesystem::absolute(path).string();
     }
 
-    inline Option<string> canonicalPath(const std::string& path) {
-        try {
-                    return std::filesystem::canonical(path).addString();
-                } catch (...) {
-                    return std::nullopt;
-                }
-    }
-
-    inline std::string relativePath(const std::string& path, const std::string& base) {
-        return std::filesystem::relative(path, base).addString();
-    }
-
-    inline std::string parentPath(const std::string& path) {
-        return std::filesystem::path(path).parent_path().addString();
+    inline std::string parentDir(const std::string& path) {
+        return std::filesystem::path(path).parent_path().string();
     }
 
     inline std::string fileName(const std::string& path) {
-        return std::filesystem::path(path).filename().addString();
-    }
-
-    inline std::string stem(const std::string& path) {
-        return std::filesystem::path(path).stem().addString();
+        return std::filesystem::path(path).filename().string();
     }
 
     inline std::string extension(const std::string& path) {
-        return std::filesystem::path(path).extension().addString();
-    }
-
-    inline std::string joinPath(Array<string> parts) {
-        if (parts.empty()) return "";
-                std::filesystem::path result = parts[0];
-                for (size_t i = 1; i < parts.size(); i++) {
-                    result /= parts[i];
-                }
-                return result.addString();
-    }
-
-    inline std::string normalizePath(const std::string& path) {
-        return std::filesystem::path(path).lexically_normal().addString();
+        return std::filesystem::path(path).extension().string();
     }
 
     inline std::string tempDir() {
-        return std::filesystem::temp_directory_path().addString();
+        return std::filesystem::temp_directory_path().string();
     }
 
-    inline Option<string> createTempFile(const std::string& prefix) {
-        try {
-                    auto temp = std::filesystem::temp_directory_path() / (prefix + "XXXXXX");
-                    std::string path = temp.addString();
-                    int fd = mkstemp(&path[0]);
-                    if (fd == -1) return std::nullopt;
-                    close(fd);
-                    return path;
-                } catch (...) {
-                    return std::nullopt;
-                }
+    inline std::optional<std::string> createTempFile(const std::string& prefix) {
+        std::string dir = std::filesystem::temp_directory_path().string();
+                std::string path = dir + "/" + prefix + "_XXXXXX";
+                std::vector<char> buf(path.begin(), path.end());
+                buf.push_back('\0');
+                int fd = mkstemp(buf.data());
+                if (fd == -1) return std::nullopt;
+                close(fd);
+                return std::string(buf.data());
     }
 
     inline std::string cwd() {
-        return std::filesystem::current_path().addString();
+        return std::filesystem::current_path().string();
     }
 
-    inline bool chdir(const std::string& path) {
+    inline bool setCwd(const std::string& path) {
         try {
                     std::filesystem::current_path(path);
                     return true;
@@ -1329,11 +1342,40 @@ namespace File {
                 }
     }
 
+    inline std::vector<std::string> listDir(const std::string& path) {
+        std::vector<std::string> entries;
+                if (!std::filesystem::is_directory(path)) return entries;
+                for (const auto& entry : std::filesystem::directory_iterator(path)) {
+                    entries.push_back(entry.path().filename().string());
+                }
+                return entries;
+    }
+
+    inline std::vector<int64_t> readBytes(const std::string& path) {
+        std::vector<int64_t> result;
+                std::ifstream file(path, std::ios::binary);
+                if (!file) return result;
+                char byte;
+                while (file.get(byte)) {
+                    result.push_back(static_cast<unsigned char>(byte));
+                }
+                return result;
+    }
+
+    inline bool writeBytes(const std::string& path, const std::vector<int64_t>& data) {
+        std::ofstream file(path, std::ios::binary);
+                if (!file) return false;
+                for (auto b : data) {
+                    file.put(static_cast<char>(b));
+                }
+                return true;
+    }
+
 } // namespace File
 
-// ============================================================================
+// =======================================================================
 // Standard Library Helpers (generated once)
-// ============================================================================
+// =======================================================================
 #ifndef MAGOLOR_STDLIB_HELPERS_H
 #define MAGOLOR_STDLIB_HELPERS_H
 
@@ -1377,30 +1419,6 @@ inline T unwrapOr(const std::optional<T>& opt, const T& defaultValue) {
 
 #endif // MAGOLOR_STDLIB_HELPERS_H
 
-// Array helper wrappers
-template<typename T> int length(const ::std::vector<T>& arr) { return arr.size(); }
-template<typename T> void push(::std::vector<T>& arr, const T& val) { arr.push_back(val); }
-template<typename T> T pop(::std::vector<T>& arr) { auto v = arr.back(); arr.pop_back(); return v; }
-
-// Map helper wrappers
-namespace Map {
-  template<typename K, typename V> ::std::unordered_map<K,V> create() { return {}; }
-  template<typename K, typename V> void insert(::std::unordered_map<K,V>& m, const K& k, const V& v) { m[k] = v; }
-  template<typename K, typename V> ::std::optional<V> get(const ::std::unordered_map<K,V>& m, const K& k) {
-    auto it = m.find(k); return it != m.end() ? ::std::optional<V>(it->second) : ::std::nullopt;
-  }
-  template<typename K, typename V> ::std::vector<V> values(const ::std::unordered_map<K,V>& m) {
-    ::std::vector<V> r; for(auto& p : m) r.push_back(p.second); return r;
-  }
-}
-
-// File helper
-namespace File {
-  inline bool exists(const ::std::string& path) {
-    ::std::ifstream f(path); return f.good();
-  }
-}
-
 // Global I/O functions
 inline void print(const std::string& s) { std::cout << s; }
 inline void println(const std::string& s) { std::cout << s << std::endl; }
@@ -1426,13 +1444,13 @@ class Schema;
 
 class ValueType {
 public:
-    static constexpr int VALUE_NULL = 0;
-    static constexpr int INT = 1;
-    static constexpr int FLOAT = 2;
-    static constexpr int STRING = 3;
-    static constexpr int BOOL = 4;
-    static constexpr int OBJECT_REF = 5;
-    static constexpr int ARRAY = 6;
+    static constexpr int64_t VALUE_NULL = 0;
+    static constexpr int64_t INT = 1;
+    static constexpr int64_t FLOAT = 2;
+    static constexpr int64_t STRING = 3;
+    static constexpr int64_t BOOL = 4;
+    static constexpr int64_t OBJECT_REF = 5;
+    static constexpr int64_t ARRAY = 6;
 };
 
 // Auto-generated print support
@@ -1445,9 +1463,9 @@ inline std::ostream& operator<<(std::ostream& os, const ValueType& obj) {
 class SlateSchema {
 public:
     std::string className;
-    int classId;
+    int64_t classId;
     std::vector<std::string> fieldNames;
-    std::vector<int> fieldTypes;
+    std::vector<int64_t> fieldTypes;
     void create() {
         this->className = std::string("");
         this->classId = 0;
@@ -1457,7 +1475,7 @@ public:
             this->fieldTypes = std::vector<int>();
         
     }
-    void addField(std::string name, int typeCode) {
+    void addField(std::string name, int64_t typeCode) {
         // Inline C++ code:
 
             this->fieldNames.push_back(name);
@@ -1478,12 +1496,12 @@ inline std::ostream& operator<<(std::ostream& os, const SlateSchema& obj) {
 
 class SlateValue {
 public:
-    int valueType;
-    int intValue;
+    int64_t valueType;
+    int64_t intValue;
     double floatValue;
     std::string stringValue;
     bool boolValue;
-    int objectId;
+    int64_t objectId;
     std::vector<SlateValue> arrayValue;
     void create() {
         this->valueType = 0;
@@ -1502,7 +1520,7 @@ public:
         v.valueType = 0;
         return v;
     }
-    static SlateValue makeInt(int value) {
+    static SlateValue makeInt(int64_t value) {
         auto v = SlateValue();
         v.valueType = 1;
         v.intValue = value;
@@ -1526,7 +1544,7 @@ public:
         v.boolValue = value;
         return v;
     }
-    static SlateValue makeRef(int id) {
+    static SlateValue makeRef(int64_t id) {
         auto v = SlateValue();
         v.valueType = 5;
         v.objectId = id;
@@ -1570,7 +1588,7 @@ inline std::ostream& operator<<(std::ostream& os, const SlateValue& obj) {
 class SlateObject {
 public:
     std::string className;
-    int objectId;
+    int64_t objectId;
     std::unordered_map<std::string, SlateValue> fields;
     void create() {
         this->className = std::string("");
@@ -1593,7 +1611,7 @@ public:
             return std::nullopt;
         
     }
-    int getInt(std::string name) {
+    int64_t getInt(std::string name) {
         auto opt = this->getField(name);
         if (isSome(opt)) {
             return unwrap(opt).intValue;
@@ -1669,18 +1687,18 @@ inline std::ostream& operator<<(std::ostream& os, const SlateConfig& obj) {
 
 class BinaryWriter {
 public:
-    std::vector<int> data;
+    std::vector<int64_t> data;
     void create() {
         // Inline C++ code:
 
             this->data = std::vector<int>();
         
     }
-    void writeU8(int val) {
+    void writeU8(int64_t val) {
         // Inline C++ code:
  this->data.push_back(val & 0xFF); 
     }
-    void writeU32(int val) {
+    void writeU32(int64_t val) {
         // Inline C++ code:
 
             this->writeU8(val & 0xFF);
@@ -1689,7 +1707,7 @@ public:
             this->writeU8((val >> 24) & 0xFF);
         
     }
-    void writeI64(int val) {
+    void writeI64(int64_t val) {
         // Inline C++ code:
 
             for (int i = 0; i < 8; i++) {
@@ -1761,6 +1779,17 @@ public:
             }
         }
     }
+    std::vector<int64_t> toInt64Vector() {
+        // Inline C++ code:
+
+            std::vector<int64_t> result;
+            result.reserve(this->data.size());
+            for (int byte : this->data) {
+                result.push_back(static_cast<int64_t>(byte));
+            }
+            return result;
+        
+    }
 };
 
 // Auto-generated print support
@@ -1772,8 +1801,8 @@ inline std::ostream& operator<<(std::ostream& os, const BinaryWriter& obj) {
 
 class BinaryReader {
 public:
-    std::vector<int> data;
-    int pos;
+    std::vector<int64_t> data;
+    int64_t pos;
     void create() {
         // Inline C++ code:
 
@@ -1781,12 +1810,22 @@ public:
         
         this->pos = 0;
     }
-    int readU8() {
+    void setFromInt64Vector(std::vector<int64_t> int64Data) {
+        // Inline C++ code:
+
+            this->data.clear();
+            for (int64_t byte : int64Data) {
+                this->data.push_back(static_cast<int>(byte));
+            }
+            this->pos = 0;
+        
+    }
+    int64_t readU8() {
         auto v = this->data[this->pos];
         this->pos = (this->pos + 1);
         return v;
     }
-    int readU32() {
+    int64_t readU32() {
         auto b0 = this->readU8();
         auto b1 = this->readU8();
         auto b2 = this->readU8();
@@ -1794,7 +1833,7 @@ public:
         // Inline C++ code:
  return b0 | (b1 << 8) | (b2 << 16) | (b3 << 24); 
     }
-    int readI64() {
+    int64_t readI64() {
         // Inline C++ code:
 
             int64_t v = 0;
@@ -2015,12 +2054,19 @@ void exportObjectEncrypted(SlateObject obj, std::string filename, std::string pa
     
     // Inline C++ code:
 
+        // Convert int to int64_t for Crypto::encrypt
+        std::vector<int64_t> plaintextData;
+        plaintextData.reserve(writer.data.size());
+        for (int byte : writer.data) {
+            plaintextData.push_back(static_cast<int64_t>(byte));
+        }
+        
         // Import Crypto functions directly
         using Crypto::CryptoResult;
         using Crypto::encrypt;
         
         // Encrypt data
-        CryptoResult encrypted = encrypt(writer.data, password);
+        CryptoResult encrypted = encrypt(plaintextData, password);
         
         if (!encrypted.success) {
             std::cerr << "Encryption failed: " << encrypted.error << std::endl;
@@ -2038,17 +2084,17 @@ void exportObjectEncrypted(SlateObject obj, std::string filename, std::string pa
         file.write("SLATEDB", 7);
         
         // Write salt (16 bytes)
-        for (int byte : encrypted.salt) {
+        for (int64_t byte : encrypted.salt) {
             file.put(static_cast<char>(byte));
         }
         
         // Write IV (12 bytes)
-        for (int byte : encrypted.iv) {
+        for (int64_t byte : encrypted.iv) {
             file.put(static_cast<char>(byte));
         }
         
         // Write tag (16 bytes)
-        for (int byte : encrypted.tag) {
+        for (int64_t byte : encrypted.tag) {
             file.put(static_cast<char>(byte));
         }
         
@@ -2060,7 +2106,7 @@ void exportObjectEncrypted(SlateObject obj, std::string filename, std::string pa
         file.put((len >> 24) & 0xFF);
         
         // Write encrypted data
-        for (int byte : encrypted.data) {
+        for (int64_t byte : encrypted.data) {
             file.put(static_cast<char>(byte));
         }
         
@@ -2098,19 +2144,19 @@ SlateObject importObjectEncrypted(std::string filename, std::string password) {
         // Read salt (16 bytes)
         encrypted.salt.resize(16);
         for (int i = 0; i < 16; i++) {
-            encrypted.salt[i] = static_cast<unsigned char>(file.get());
+            encrypted.salt[i] = static_cast<int64_t>(static_cast<unsigned char>(file.get()));
         }
         
         // Read IV (12 bytes)
         encrypted.iv.resize(12);
         for (int i = 0; i < 12; i++) {
-            encrypted.iv[i] = static_cast<unsigned char>(file.get());
+            encrypted.iv[i] = static_cast<int64_t>(static_cast<unsigned char>(file.get()));
         }
         
         // Read tag (16 bytes)
         encrypted.tag.resize(16);
         for (int i = 0; i < 16; i++) {
-            encrypted.tag[i] = static_cast<unsigned char>(file.get());
+            encrypted.tag[i] = static_cast<int64_t>(static_cast<unsigned char>(file.get()));
         }
         
         // Read data length
@@ -2123,7 +2169,7 @@ SlateObject importObjectEncrypted(std::string filename, std::string password) {
         // Read encrypted data
         encrypted.data.resize(len);
         for (uint32_t i = 0; i < len; i++) {
-            encrypted.data[i] = static_cast<unsigned char>(file.get());
+            encrypted.data[i] = static_cast<int64_t>(static_cast<unsigned char>(file.get()));
         }
         
         file.close();
@@ -2140,9 +2186,12 @@ SlateObject importObjectEncrypted(std::string filename, std::string password) {
             return SlateObject();
         }
         
-        // Parse decrypted data
+        // Parse decrypted data - convert int64_t back to int
         BinaryReader reader;
-        reader.data = decrypted.data;
+        reader.data.clear();
+        for (int64_t byte : decrypted.data) {
+            reader.data.push_back(static_cast<int>(byte));
+        }
         reader.pos = 0;
         
         // Read object metadata
