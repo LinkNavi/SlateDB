@@ -1,6 +1,4 @@
-@cpp_header {
-    #include <cstring>
-}
+
 
 using Std.IO;
 using Std.File;
