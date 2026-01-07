@@ -1,73 +1,74 @@
 // Example: Using SlateDB with encryption
 using Std.IO;
-using Slate.DB;
+using SlateDB.Slate.DB;
 
 fn main() {
-    // Create encrypted database
-    let db = SlateDB.createEncrypted("users.slate", "mySecretPassword123!");
+    // Create encrypted database config
+    let cfg = SlateConfig.createEncrypted("mySecretPassword123!");
+    let db = new SlateDB();
+    db.open("users.slate", cfg);
     
-    // Define schema using fluent API
-    db.schema(Schema.define("User")
-        .int("id")
-        .string("name")
-        .string("email")
-        .bool("active")
-        .build());
+    // Define User schema using builder
+    let userSchema = SchemaBuilder.forTable("User");
+    userSchema.addInt("id");
+    userSchema.addString("name");
+    userSchema.addString("email");
+    userSchema.addBool("active");
+    db.registerSchema(userSchema.build());
     
-    db.schema(Schema.define("Post")
-        .int("id")
-        .string("title")
-        .string("content")
-        .ref("author")
-        .build());
+    // Define Post schema
+    let postSchema = SchemaBuilder.forTable("Post");
+    postSchema.addInt("id");
+    postSchema.addString("title");
+    postSchema.addString("content");
+    postSchema.addObject("author");
+    db.registerSchema(postSchema.build());
     
-    // Create objects
-    let userOpt = db.new("User");
+    // Create user object
+    let userOpt = db.createObject("User");
     if (isSome(userOpt)) {
         let user = unwrap(userOpt);
-        user.set("id", SlateValue.int(1));
-        user.set("name", SlateValue.string("Alice"));
-        user.set("email", SlateValue.string("alice@example.com"));
-        user.set("active", SlateValue.bool(true));
+        user.setField("id", SlateValue.createInt(1));
+        user.setField("name", SlateValue.createString("Alice"));
+        user.setField("email", SlateValue.createString("alice@example.com"));
+        user.setField("active", SlateValue.createBool(true));
         db.save(user);
         
-        // Create a post
-        let postOpt = db.new("Post");
+        // Create post object
+        let postOpt = db.createObject("Post");
         if (isSome(postOpt)) {
             let post = unwrap(postOpt);
-            post.set("id", SlateValue.int(1));
-            post.set("title", SlateValue.string("Hello World"));
-            post.set("content", SlateValue.string("My first encrypted post!"));
-            post.set("author", SlateValue.ref(user.objectId));
+            post.setField("id", SlateValue.createInt(1));
+            post.setField("title", SlateValue.createString("Hello World"));
+            post.setField("content", SlateValue.createString("My first encrypted post!"));
+            post.setField("author", SlateValue.createObjectRef(user.objectId));
             db.save(post);
         }
     }
     
-    // Flush to disk (encrypted with AES-256-GCM)
-    db.flush();
     db.close();
-    
     println("Database created and encrypted!");
     
-    // Later: Open encrypted database
-    let db2 = SlateDB.openEncrypted("users.slate", "mySecretPassword123!");
+    // Later: Open and query
+    let db2 = new SlateDB();
+    db2.open("users.slate", cfg);
     
-    // Query users
-    let users = db2.find("User");
+    let users = db2.query("User");
     println($"Found {users.size()} users");
     
     let i = 0;
     while (i < users.size()) {
         let u = users[i];
-        println($"User: {u.getString(\"name\")} - {u.getString(\"email\")}");
+        let nameOpt = u.getField("name");
+        let emailOpt = u.getField("email");
+        
+        if (isSome(nameOpt) && isSome(emailOpt)) {
+            let name = unwrap(nameOpt);
+            let email = unwrap(emailOpt);
+            println($"User: {name.stringValue} - {email.stringValue}");
+        }
         i = i + 1;
     }
     
     db2.close();
-    
-    // Wrong password will fail
-    println("Trying wrong password...");
-    let db3 = SlateDB.openEncrypted("users.slate", "wrongPassword");
-    let badUsers = db3.find("User");
-    println($"Users with wrong password: {badUsers.size()}"); // Will be 0
 }
