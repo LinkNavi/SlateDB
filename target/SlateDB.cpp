@@ -1,30 +1,24 @@
-// Force stdlib generation
+// Auto-generated C++ code from Magolor
 #include <vector>
 #include <unordered_map>
 #include <optional>
 #include <iostream>
 #include <string>
-
-#include <iostream>
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-#include <optional>
 #include <algorithm>
 #include <functional>
 #include <sstream>
 #include <fstream>
+#include <filesystem>
+#include <random>
 #include <chrono>
 #include <thread>
-#include <random>
 #include <cmath>
-#include <ctime>
-#include <filesystem>
-#include <numeric>
-#include <iomanip>
-#include <cstdlib>
-#include <unistd.h>
+
+// ============================================================================
+// Standard Library Helpers (generated once)
+// ============================================================================
+#ifndef MAGOLOR_STDLIB_HELPERS_H
+#define MAGOLOR_STDLIB_HELPERS_H
 
 // Template helpers for string conversion
 template<typename T>
@@ -64,114 +58,7 @@ inline T unwrapOr(const std::optional<T>& opt, const T& defaultValue) {
     return opt.value_or(defaultValue);
 }
 
-
-
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <vector>
-#include <unordered_map>
-#include <unordered_set>
-#include <functional>
-#include <optional>
-#include <algorithm>
-#include <chrono>
-#include <thread>
-#include <random>
-#include <cmath>
-#include <cstdlib>
-#include <ctime>
-#include <filesystem>
-#include <iomanip>
-#include <numeric>
-#include <regex>
-
-
-// Template helpers for string conversion
-template<typename T>
-inline std::string mg_to_string(const T& val) { 
-    std::ostringstream oss; 
-    oss << val; 
-    return oss.str(); 
-}
-
-template<>
-inline std::string mg_to_string(const bool& val) {
-    return val ? "true" : "false";
-}
-
-template<>
-inline std::string mg_to_string(const std::string& val) {
-    return val;
-}
-
-// Global Option helpers
-template<typename T>
-inline bool isSome(const std::optional<T>& opt) { return opt.has_value(); }
-
-template<typename T>
-inline bool isNone(const std::optional<T>& opt) { return !opt.has_value(); }
-
-template<typename T>
-inline T unwrap(const std::optional<T>& opt) {
-    if (!opt.has_value()) {
-        throw std::runtime_error("Called unwrap on None value");
-    }
-    return opt.value();
-}
-
-template<typename T>
-inline T unwrapOr(const std::optional<T>& opt, const T& defaultValue) {
-    return opt.value_or(defaultValue);
-}
-
-namespace Std {
-
-// Module not found: Std.Core.Prelude
-// Module not found: Std.Random
-// Module not found: Std.File
-// Module not found: Std.Math
-// Module not found: Std.System
-// Module not found: Std.Time
-// Module not found: Std.Map
-// Module not found: Std.Array
-// Module not found: Std.String
-// Module not found: Std.IO
-
-// Convenience functions at Std level
-template<typename T>
-inline void print(const T& val) { std::cout << mg_to_string(val); }
-
-template<typename T>
-inline void println(const T& val) { std::cout << mg_to_string(val) << std::endl; }
-
-inline void print(const std::string& s) { std::cout << s; }
-inline void println(const std::string& s) { std::cout << s << std::endl; }
-
-inline std::string readLine() { 
-    std::string line; 
-    std::getline(std::cin, line); 
-    return line; 
-}
-
-inline std::string toString(int v) { return std::to_string(v); }
-inline std::string toString(double v) { return std::to_string(v); }
-inline std::string toString(bool v) { return v ? "true" : "false"; }
-
-} // namespace Std
-
-using Std::println;
-using Std::print;
-using Std::readLine;
-
- // namespace Std
-
-using Std::println;
-using Std::print;
-using Std::readLine;
-using Std::toString;
-
+#endif // MAGOLOR_STDLIB_HELPERS_H
 
 // Array helper wrappers
 template<typename T> int length(const ::std::vector<T>& arr) { return arr.size(); }
