@@ -28,43 +28,43 @@
 
 // Template helpers for string conversion
 template<typename T>
-inline ::std::string mg_to_string(const T& val) { 
-    ::std::ostringstream oss; 
+inline std::string mg_to_string(const T& val) { 
+    std::ostringstream oss; 
     oss << val; 
     return oss.str(); 
 }
 
 template<>
-inline ::std::string mg_to_string(const bool& val) {
+inline std::string mg_to_string(const bool& val) {
     return val ? "true" : "false";
 }
 
 template<>
-inline ::std::string mg_to_string(const ::std::string& val) {
+inline std::string mg_to_string(const std::string& val) {
     return val;
 }
 
 // Global Option helpers
 template<typename T>
-inline bool isSome(const ::std::optional<T>& opt) { return opt.has_value(); }
+inline bool isSome(const std::optional<T>& opt) { return opt.has_value(); }
 
 template<typename T>
-inline bool isNone(const ::std::optional<T>& opt) { return !opt.has_value(); }
+inline bool isNone(const std::optional<T>& opt) { return !opt.has_value(); }
 
 template<typename T>
-inline T unwrap(const ::std::optional<T>& opt) {
+inline T unwrap(const std::optional<T>& opt) {
     if (!opt.has_value()) {
-        throw ::std::runtime_error("Called unwrap on None value");
+        throw std::runtime_error("Called unwrap on None value");
     }
     return opt.value();
 }
 
 template<typename T>
-inline T unwrapOr(const ::std::optional<T>& opt, const T& defaultValue) {
+inline T unwrapOr(const std::optional<T>& opt, const T& defaultValue) {
     return opt.value_or(defaultValue);
 }
 
-namespace Std {
+
 
 #include <iostream>
 #include <string>
@@ -90,39 +90,39 @@ namespace Std {
 
 // Template helpers for string conversion
 template<typename T>
-inline ::std::string mg_to_string(const T& val) { 
-    ::std::ostringstream oss; 
+inline std::string mg_to_string(const T& val) { 
+    std::ostringstream oss; 
     oss << val; 
     return oss.str(); 
 }
 
 template<>
-inline ::std::string mg_to_string(const bool& val) {
+inline std::string mg_to_string(const bool& val) {
     return val ? "true" : "false";
 }
 
 template<>
-inline ::std::string mg_to_string(const ::std::string& val) {
+inline std::string mg_to_string(const std::string& val) {
     return val;
 }
 
 // Global Option helpers
 template<typename T>
-inline bool isSome(const ::std::optional<T>& opt) { return opt.has_value(); }
+inline bool isSome(const std::optional<T>& opt) { return opt.has_value(); }
 
 template<typename T>
-inline bool isNone(const ::std::optional<T>& opt) { return !opt.has_value(); }
+inline bool isNone(const std::optional<T>& opt) { return !opt.has_value(); }
 
 template<typename T>
-inline T unwrap(const ::std::optional<T>& opt) {
+inline T unwrap(const std::optional<T>& opt) {
     if (!opt.has_value()) {
-        throw ::std::runtime_error("Called unwrap on None value");
+        throw std::runtime_error("Called unwrap on None value");
     }
     return opt.value();
 }
 
 template<typename T>
-inline T unwrapOr(const ::std::optional<T>& opt, const T& defaultValue) {
+inline T unwrapOr(const std::optional<T>& opt, const T& defaultValue) {
     return opt.value_or(defaultValue);
 }
 
@@ -141,23 +141,23 @@ namespace Std {
 
 // Convenience functions at Std level
 template<typename T>
-inline void print(const T& val) { ::std::cout << mg_to_string(val); }
+inline void print(const T& val) { std::cout << mg_to_string(val); }
 
 template<typename T>
-inline void println(const T& val) { ::std::cout << mg_to_string(val) << ::std::endl; }
+inline void println(const T& val) { std::cout << mg_to_string(val) << std::endl; }
 
-inline void print(const ::std::string& s) { ::std::cout << s; }
-inline void println(const ::std::string& s) { ::std::cout << s << ::std::endl; }
+inline void print(const std::string& s) { std::cout << s; }
+inline void println(const std::string& s) { std::cout << s << std::endl; }
 
-inline ::std::string readLine() { 
-    ::std::string line; 
-    ::std::getline(::std::cin, line); 
+inline std::string readLine() { 
+    std::string line; 
+    std::getline(std::cin, line); 
     return line; 
 }
 
-inline ::std::string toString(int v) { return ::std::to_string(v); }
-inline ::std::string toString(double v) { return ::std::to_string(v); }
-inline ::std::string toString(bool v) { return v ? "true" : "false"; }
+inline std::string toString(int v) { return std::to_string(v); }
+inline std::string toString(double v) { return std::to_string(v); }
+inline std::string toString(bool v) { return v ? "true" : "false"; }
 
 } // namespace Std
 
@@ -165,17 +165,13 @@ using Std::println;
 using Std::print;
 using Std::readLine;
 
-} // namespace Std
+ // namespace Std
 
 using Std::println;
 using Std::print;
 using Std::readLine;
 using Std::toString;
 
-// Import Std namespace for convenience
-using Std::println;
-using Std::print;
-using Std::readLine;
 
 // Array helper wrappers
 template<typename T> int length(const ::std::vector<T>& arr) { return arr.size(); }
@@ -412,11 +408,9 @@ public:
     void registerSchema(SlateSchema schema) {
         println((std::string("Registering schema: ") + mg_to_string(schema.className)));
         this->schemas[schema.className] = schema;
-        println((std::string("Schema count after register: ") + mg_to_string(this.schemas.size())));
     }
     std::optional<SlateSchema> getSchema(std::string className) {
         println((std::string("Looking for schema: ") + mg_to_string(className)));
-        println((std::string("Current schema count: ") + mg_to_string(this.schemas.size())));
         // Inline C++ code:
 
             auto it = this->schemas.find(className);

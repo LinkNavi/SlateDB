@@ -1,5 +1,5 @@
 // src/slate/db.mg - FIXED VERSION
-// Changed all field accesses to use explicit "this.field" syntax
+// Changed all field accesses to use "this." syntax for C++ compatibility
 
 using Std.IO;
 using Std.File;
@@ -173,12 +173,12 @@ pub class SlateDB {
     pub fn registerSchema(schema: SlateSchema) {
         println($"Registering schema: {schema.className}");
         this.schemas[schema.className] = schema;
-        println($"Schema count after register: {this.schemas.size()}");
+
     }
     
     pub fn getSchema(className: string) -> Option<SlateSchema> {
         println($"Looking for schema: {className}");
-        println($"Current schema count: {this.schemas.size()}");
+
         @cpp {
             auto it = this->schemas.find(className);
             if (it != this->schemas.end()) {
