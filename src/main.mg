@@ -1,6 +1,6 @@
 // Example: Using SlateDB with encryption
 using Std.IO;
-using Slate.DB;
+using SlateDB.Slate.DB;
 
 fn main() {
     // Create encrypted database
@@ -8,37 +8,37 @@ fn main() {
     
     // Define schema using fluent API
   db.schema(Schema.define("User")
-        .int("id")
+        .addInt("id")
         .str("name")
         .str("email")
         .boolean("active")
         .build());
     
     db.schema(Schema.define("Post")
-        .int("id")
+        .addInt("id")
         .str("title")
         .str("content")
-        .ref("author")
+        .addRef("author")
         .build());
     
     // Create objects
-    let userOpt = db.new("User");
+    let userOpt = db.create("User");
     if (isSome(userOpt)) {
         let user = unwrap(userOpt);
-        user.set("id", SlateValue.int(1));
+        user.set("id", SlateValue.addInt(1));
         user.set("name", SlateValue.str("Alice"));
         user.set("email", SlateValue.str("alice@example.com"));
-        user.set("active", SlateValue.bool(true));
+        user.set("active", SlateValue.addBool(true));
         db.save(user);
         
         // Create a post
-        let postOpt = db.new("Post");
+        let postOpt = db.create("Post");
         if (isSome(postOpt)) {
             let post = unwrap(postOpt);
-            post.set("id", SlateValue.int(1));
+            post.set("id", SlateValue.addInt(1));
             post.set("title", SlateValue.str("Hello World"));
             post.set("content", SlateValue.str("My first encrypted post!"));
-            post.set("author", SlateValue.ref(user.objectId));
+            post.set("author", SlateValue.addRef(user.objectId));
             db.save(post);
         }
     }

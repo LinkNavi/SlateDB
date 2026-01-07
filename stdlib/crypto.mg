@@ -4,7 +4,7 @@
 @link { -lssl -lcrypto }
 @include { <openssl/evp.h> <openssl/rand.h> }
 @cimport { openssl/evp.h openssl/rand.h }
-
+using Std.Core.Prelude;
 using Std.Array;
 
 // Encryption result containing ciphertext + metadata

@@ -227,7 +227,7 @@ pub fn listDir(path: string) -> Option<Array<string>> {
         try {
             std::vector<std::string> entries;
             for (const auto& entry : std::filesystem::directory_iterator(path)) {
-                entries.push_back(entry.path().filename().string());
+                entries.push_back(entry.path().filename().addString());
             }
             return entries;
         } catch (...) {
@@ -241,7 +241,7 @@ pub fn listDirRecursive(path: string) -> Option<Array<string>> {
         try {
             std::vector<std::string> entries;
             for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
-                entries.push_back(entry.path().string());
+                entries.push_back(entry.path().addString());
             }
             return entries;
         } catch (...) {
@@ -255,10 +255,10 @@ pub fn glob(path: string, pattern: string) -> Array<string> {
         std::vector<std::string> matches;
         try {
             for (const auto& entry : std::filesystem::directory_iterator(path)) {
-                std::string name = entry.path().filename().string();
+                std::string name = entry.path().filename().addString();
                 // Simple wildcard matching
                 if (pattern == "*" || name.find(pattern.substr(1)) != std::string::npos) {
-                    matches.push_back(entry.path().string());
+                    matches.push_back(entry.path().addString());
                 }
             }
         } catch (...) {}
@@ -271,13 +271,13 @@ pub fn glob(path: string, pattern: string) -> Array<string> {
 // ============================================================================
 
 pub fn absolutePath(path: string) -> string {
-    @cpp { return std::filesystem::absolute(path).string(); }
+    @cpp { return std::filesystem::absolute(path).addString(); }
 }
 
 pub fn canonicalPath(path: string) -> Option<string> {
     @cpp {
         try {
-            return std::filesystem::canonical(path).string();
+            return std::filesystem::canonical(path).addString();
         } catch (...) {
             return std::nullopt;
         }
@@ -285,23 +285,23 @@ pub fn canonicalPath(path: string) -> Option<string> {
 }
 
 pub fn relativePath(path: string, base: string) -> string {
-    @cpp { return std::filesystem::relative(path, base).string(); }
+    @cpp { return std::filesystem::relative(path, base).addString(); }
 }
 
 pub fn parentPath(path: string) -> string {
-    @cpp { return std::filesystem::path(path).parent_path().string(); }
+    @cpp { return std::filesystem::path(path).parent_path().addString(); }
 }
 
 pub fn fileName(path: string) -> string {
-    @cpp { return std::filesystem::path(path).filename().string(); }
+    @cpp { return std::filesystem::path(path).filename().addString(); }
 }
 
 pub fn stem(path: string) -> string {
-    @cpp { return std::filesystem::path(path).stem().string(); }
+    @cpp { return std::filesystem::path(path).stem().addString(); }
 }
 
 pub fn extension(path: string) -> string {
-    @cpp { return std::filesystem::path(path).extension().string(); }
+    @cpp { return std::filesystem::path(path).extension().addString(); }
 }
 
 pub fn joinPath(parts: Array<string>) -> string {
@@ -311,12 +311,12 @@ pub fn joinPath(parts: Array<string>) -> string {
         for (size_t i = 1; i < parts.size(); i++) {
             result /= parts[i];
         }
-        return result.string();
+        return result.addString();
     }
 }
 
 pub fn normalizePath(path: string) -> string {
-    @cpp { return std::filesystem::path(path).lexically_normal().string(); }
+    @cpp { return std::filesystem::path(path).lexically_normal().addString(); }
 }
 
 // ============================================================================
@@ -324,14 +324,14 @@ pub fn normalizePath(path: string) -> string {
 // ============================================================================
 
 pub fn tempDir() -> string {
-    @cpp { return std::filesystem::temp_directory_path().string(); }
+    @cpp { return std::filesystem::temp_directory_path().addString(); }
 }
 
 pub fn createTempFile(prefix: string) -> Option<string> {
     @cpp {
         try {
             auto temp = std::filesystem::temp_directory_path() / (prefix + "XXXXXX");
-            std::string path = temp.string();
+            std::string path = temp.addString();
             int fd = mkstemp(&path[0]);
             if (fd == -1) return std::nullopt;
             close(fd);
@@ -347,7 +347,7 @@ pub fn createTempFile(prefix: string) -> Option<string> {
 // ============================================================================
 
 pub fn cwd() -> string {
-    @cpp { return std::filesystem::current_path().string(); }
+    @cpp { return std::filesystem::current_path().addString(); }
 }
 
 pub fn chdir(path: string) -> bool {

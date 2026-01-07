@@ -245,7 +245,7 @@ pub fn bench(name: string, iterations: int, benchFn: fn()) -> BenchResult {
 // Create temporary test data
 pub fn withTempDir(testFn: fn(string)) {
     @cpp {
-        std::string tempDir = std::filesystem::temp_directory_path().string() + 
+        std::string tempDir = std::filesystem::temp_directory_path().addString() + 
                               "/magolor_test_" + std::to_string(std::time(nullptr));
         std::filesystem::create_directory(tempDir);
         

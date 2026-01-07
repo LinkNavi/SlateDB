@@ -3,29 +3,31 @@ using Std.File;
 using Std.String;
 using Std.Array;
 using Std.Map;
-using Std.Crypto;
+using Std.crypto;
 
 // ============================
-// Value type codes
+// ValueType holder (no top-level vars allowed)
 // ============================
 
-pub const TYPE_NULL = 0;
-pub const TYPE_INT = 1;
-pub const TYPE_FLOAT = 2;
-pub const TYPE_STRING = 3;
-pub const TYPE_BOOL = 4;
-pub const TYPE_OBJECT_REF = 5;
-pub const TYPE_ARRAY = 6;
+pub class ValueType {
+    pub static NULL: int = 0;
+    pub static INT: int = 1;
+    pub static FLOAT: int = 2;
+    pub static STRING: int = 3;
+    pub static BOOL: int = 4;
+    pub static OBJECT_REF: int = 5;
+    pub static ARRAY: int = 6;
+}
 
 // ============================
 // SlateSchema
 // ============================
 
 pub class SlateSchema {
-    pub className;
-    pub classId;
-    pub fieldNames;
-    pub fieldTypes;
+    pub className: string;
+    pub classId: int;
+    pub fieldNames: Array;
+    pub fieldTypes: Array;
 
     pub fn create() {
         this.className = "";
@@ -34,7 +36,7 @@ pub class SlateSchema {
         this.fieldTypes = new Array();
     }
 
-    pub fn addField(name, typeCode) {
+    pub fn addField(name: string, typeCode: int) {
         this.fieldNames.push_back(name);
         this.fieldTypes.push_back(typeCode);
     }
@@ -45,16 +47,16 @@ pub class SlateSchema {
 // ============================
 
 pub class SlateValue {
-    pub valueType;
-    pub intValue;
-    pub floatValue;
-    pub stringValue;
-    pub boolValue;
-    pub objectId;
-    pub arrayValue;
+    pub valueType: int;
+    pub intValue: int;
+    pub floatValue: float;
+    pub stringValue: string;
+    pub boolValue: bool;
+    pub objectId: int;
+    pub arrayValue: Array;
 
     pub fn create() {
-        this.valueType = TYPE_NULL;
+        this.valueType = ValueType.NULL;
         this.intValue = 0;
         this.floatValue = 0.0;
         this.stringValue = "";
@@ -63,55 +65,55 @@ pub class SlateValue {
         this.arrayValue = new Array();
     }
 
-    pub fn makeNull() {
+    pub fn makeNull() -> SlateValue {
         let v = new SlateValue();
-        v.valueType = TYPE_NULL;
+        v.valueType = ValueType.NULL;
         return v;
     }
 
-    pub fn makeInt(value) {
+    pub fn makeInt(value: int) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = TYPE_INT;
+        v.valueType = ValueType.INT;
         v.intValue = value;
         return v;
     }
 
-    pub fn makeFloat(value) {
+    pub fn makeFloat(value: float) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = TYPE_FLOAT;
+        v.valueType = ValueType.FLOAT;
         v.floatValue = value;
         return v;
     }
 
-    pub fn makeString(value) {
+    pub fn makeString(value: string) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = TYPE_STRING;
+        v.valueType = ValueType.STRING;
         v.stringValue = value;
         return v;
     }
 
-    pub fn makeBool(value) {
+    pub fn makeBool(value: bool) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = TYPE_BOOL;
+        v.valueType = ValueType.BOOL;
         v.boolValue = value;
         return v;
     }
 
-    pub fn makeRef(id) {
+    pub fn makeRef(id: int) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = TYPE_OBJECT_REF;
+        v.valueType = ValueType.OBJECT_REF;
         v.objectId = id;
         return v;
     }
 
-    pub fn makeArray() {
+    pub fn makeArray() -> SlateValue {
         let v = new SlateValue();
-        v.valueType = TYPE_ARRAY;
+        v.valueType = ValueType.ARRAY;
         v.arrayValue = new Array();
         return v;
     }
 
-    pub fn push(val) {
+    pub fn push(val: SlateValue) {
         this.arrayValue.push_back(val);
     }
 }
@@ -121,9 +123,9 @@ pub class SlateValue {
 // ============================
 
 pub class SlateObject {
-    pub className;
-    pub objectId;
-    pub fields;
+    pub className: string;
+    pub objectId: int;
+    pub fields: Map;
 
     pub fn create() {
         this.className = "";
@@ -131,11 +133,12 @@ pub class SlateObject {
         this.fields = new Map();
     }
 
-    pub fn setField(name, value) {
+    pub fn setField(name: string, value: SlateValue) {
         this.fields[name] = value;
     }
 
-    pub fn getField(name) {
+    // returns Option<SlateValue> via C++ bridge (keeps original style)
+    pub fn getField(name: string) -> Option<SlateValue> {
         @cpp {
             auto it = this->fields.find(name);
             if (it != this->fields.end()) {
@@ -145,7 +148,7 @@ pub class SlateObject {
         }
     }
 
-    pub fn getInt(name) {
+    pub fn getInt(name: string) -> int {
         let opt = this.getField(name);
         if (isSome(opt)) {
             return unwrap(opt).intValue;
@@ -153,7 +156,7 @@ pub class SlateObject {
         return 0;
     }
 
-    pub fn getString(name) {
+    pub fn getString(name: string) -> string {
         let opt = this.getField(name);
         if (isSome(opt)) {
             return unwrap(opt).stringValue;
@@ -161,7 +164,7 @@ pub class SlateObject {
         return "";
     }
 
-    pub fn getBool(name) {
+    pub fn getBool(name: string) -> bool {
         let opt = this.getField(name);
         if (isSome(opt)) {
             return unwrap(opt).boolValue;
@@ -175,10 +178,10 @@ pub class SlateObject {
 // ============================
 
 pub class SlateConfig {
-    pub encrypted;
-    pub password;
-    pub autoSave;
-    pub compressData;
+    pub encrypted: bool;
+    pub password: string;
+    pub autoSave: bool;
+    pub compressData: bool;
 
     pub fn create() {
         this.encrypted = false;
@@ -187,18 +190,18 @@ pub class SlateConfig {
         this.compressData = false;
     }
 
-    pub fn openConfig() {
+    pub fn openConfig() -> SlateConfig {
         return new SlateConfig();
     }
 
-    pub fn openEncryptedConfig(password) {
+    pub fn openEncryptedConfig(password: string) -> SlateConfig {
         let cfg = new SlateConfig();
         cfg.encrypted = true;
         cfg.password = password;
         return cfg;
     }
 
-    pub fn setAutoSave(enabled) {
+    pub fn setAutoSave(enabled: bool) -> SlateConfig {
         this.autoSave = enabled;
         return this;
     }
@@ -209,17 +212,17 @@ pub class SlateConfig {
 // ============================
 
 class BinaryWriter {
-    pub data;
+    pub data: Array;
 
     pub fn create() {
         this.data = new Array();
     }
 
-    pub fn writeU8(val) {
+    pub fn writeU8(val: int) {
         @cpp { this->data.push_back(val & 0xFF); }
     }
 
-    pub fn writeU32(val) {
+    pub fn writeU32(val: int) {
         @cpp {
             this->writeU8(val & 0xFF);
             this->writeU8((val >> 8) & 0xFF);
@@ -228,7 +231,7 @@ class BinaryWriter {
         }
     }
 
-    pub fn writeI64(val) {
+    pub fn writeI64(val: int) {
         @cpp {
             for (int i = 0; i < 8; i++) {
                 this->data.push_back((val >> (i * 8)) & 0xFF);
@@ -236,7 +239,7 @@ class BinaryWriter {
         }
     }
 
-    pub fn writeF64(val) {
+    pub fn writeF64(val: float) {
         @cpp {
             double d = val;
             uint64_t bits;
@@ -247,7 +250,7 @@ class BinaryWriter {
         }
     }
 
-    pub fn writeString(val) {
+    pub fn writeString(val: string) {
         let len = val.length();
         this.writeU32(len);
         @cpp {
@@ -257,25 +260,24 @@ class BinaryWriter {
         }
     }
 
-    pub fn writeValue(val) {
+    pub fn writeValue(val: SlateValue) {
         this.writeU8(val.valueType);
 
-        if (val.valueType == TYPE_INT) {
+        if (val.valueType == ValueType.INT) {
             this.writeI64(val.intValue);
-        } else if (val.valueType == TYPE_FLOAT) {
+        } else if (val.valueType == ValueType.FLOAT) {
             this.writeF64(val.floatValue);
-        } else if (val.valueType == TYPE_STRING) {
+        } else if (val.valueType == ValueType.STRING) {
             this.writeString(val.stringValue);
-        } else if (val.valueType == TYPE_BOOL) {
-           
-if (val.boolValue) {
-    this.writeU8(1);
-} else {
-    this.writeU8(0);
-}
-        } else if (val.valueType == TYPE_OBJECT_REF) {
+        } else if (val.valueType == ValueType.BOOL) {
+            if (val.boolValue) {
+                this.writeU8(1);
+            } else {
+                this.writeU8(0);
+            }
+        } else if (val.valueType == ValueType.OBJECT_REF) {
             this.writeI64(val.objectId);
-        } else if (val.valueType == TYPE_ARRAY) {
+        } else if (val.valueType == ValueType.ARRAY) {
             let count = val.arrayValue.size();
             this.writeU32(count);
             let i = 0;
@@ -292,21 +294,21 @@ if (val.boolValue) {
 // ============================
 
 class BinaryReader {
-    pub data;
-    pub pos;
+    pub data: Array;
+    pub pos: int;
 
     pub fn create() {
         this.data = new Array();
         this.pos = 0;
     }
 
-    pub fn readU8() {
+    pub fn readU8() -> int {
         let v = this.data[this.pos];
         this.pos = this.pos + 1;
         return v;
     }
 
-    pub fn readU32() {
+    pub fn readU32() -> int {
         let b0 = this.readU8();
         let b1 = this.readU8();
         let b2 = this.readU8();
@@ -314,7 +316,7 @@ class BinaryReader {
         @cpp { return b0 | (b1 << 8) | (b2 << 16) | (b3 << 24); }
     }
 
-    pub fn readI64() {
+    pub fn readI64() -> int {
         @cpp {
             int64_t v = 0;
             for (int i = 0; i < 8; i++) {
@@ -324,7 +326,7 @@ class BinaryReader {
         }
     }
 
-    pub fn readF64() {
+    pub fn readF64() -> float {
         @cpp {
             uint64_t bits = 0;
             for (int i = 0; i < 8; i++) {
@@ -336,7 +338,7 @@ class BinaryReader {
         }
     }
 
-    pub fn readString() {
+    pub fn readString() -> string {
         let len = this.readU32();
         @cpp {
             std::string s;
@@ -348,22 +350,22 @@ class BinaryReader {
         }
     }
 
-    pub fn readValue() {
+    pub fn readValue() -> SlateValue {
         let typeCode = this.readU8();
         let v = new SlateValue();
         v.valueType = typeCode;
 
-        if (typeCode == TYPE_INT) {
+        if (typeCode == ValueType.INT) {
             v.intValue = this.readI64();
-        } else if (typeCode == TYPE_FLOAT) {
+        } else if (typeCode == ValueType.FLOAT) {
             v.floatValue = this.readF64();
-        } else if (typeCode == TYPE_STRING) {
+        } else if (typeCode == ValueType.STRING) {
             v.stringValue = this.readString();
-        } else if (typeCode == TYPE_BOOL) {
+        } else if (typeCode == ValueType.BOOL) {
             v.boolValue = this.readU8() != 0;
-        } else if (typeCode == TYPE_OBJECT_REF) {
+        } else if (typeCode == ValueType.OBJECT_REF) {
             v.objectId = this.readI64();
-        } else if (typeCode == TYPE_ARRAY) {
+        } else if (typeCode == ValueType.ARRAY) {
             let count = this.readU32();
             let i = 0;
             while (i < count) {
@@ -381,49 +383,49 @@ class BinaryReader {
 // ============================
 
 pub class Schema {
-    pub schema;
+    pub schema: SlateSchema;
 
     pub fn create() {
         this.schema = new SlateSchema();
     }
 
-    pub fn define(name) {
+    pub fn define(name: string) -> Schema {
         let s = new Schema();
         s.schema.className = name;
         return s;
     }
 
-    pub fn addInt(name) {
-        this.schema.addField(name, TYPE_INT);
+    pub fn addInt(name: string) -> Schema {
+        this.schema.addField(name, ValueType.INT);
         return this;
     }
 
-    pub fn addFloat(name) {
-        this.schema.addField(name, TYPE_FLOAT);
+    pub fn addFloat(name: string) -> Schema {
+        this.schema.addField(name, ValueType.FLOAT);
         return this;
     }
 
-    pub fn addString(name) {
-        this.schema.addField(name, TYPE_STRING);
+    pub fn addString(name: string) -> Schema {
+        this.schema.addField(name, ValueType.STRING);
         return this;
     }
 
-    pub fn addBool(name) {
-        this.schema.addField(name, TYPE_BOOL);
+    pub fn addBool(name: string) -> Schema {
+        this.schema.addField(name, ValueType.BOOL);
         return this;
     }
 
-    pub fn addRef(name) {
-        this.schema.addField(name, TYPE_OBJECT_REF);
+    pub fn addRef(name: string) -> Schema {
+        this.schema.addField(name, ValueType.OBJECT_REF);
         return this;
     }
 
-    pub fn addArray(name) {
-        this.schema.addField(name, TYPE_ARRAY);
+    pub fn addArray(name: string) -> Schema {
+        this.schema.addField(name, ValueType.ARRAY);
         return this;
     }
 
-    pub fn build() {
+    pub fn build() -> SlateSchema {
         return this.schema;
     }
 }
