@@ -1,3 +1,10 @@
+// Force stdlib generation
+#include <vector>
+#include <unordered_map>
+#include <optional>
+#include <iostream>
+#include <string>
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,68 +23,147 @@
 #include <filesystem>
 #include <numeric>
 #include <iomanip>
+#include <cstdlib>
+#include <unistd.h>
 
 // Template helpers for string conversion
 template<typename T>
-inline std::string mg_to_string(const T& val) { 
-    std::ostringstream oss; 
+inline ::std::string mg_to_string(const T& val) { 
+    ::std::ostringstream oss; 
     oss << val; 
     return oss.str(); 
 }
 
 template<>
-inline std::string mg_to_string(const bool& val) {
+inline ::std::string mg_to_string(const bool& val) {
     return val ? "true" : "false";
 }
 
 template<>
-inline std::string mg_to_string(const std::string& val) {
+inline ::std::string mg_to_string(const ::std::string& val) {
     return val;
 }
 
 // Global Option helpers
 template<typename T>
-inline bool isSome(const std::optional<T>& opt) { return opt.has_value(); }
+inline bool isSome(const ::std::optional<T>& opt) { return opt.has_value(); }
 
 template<typename T>
-inline bool isNone(const std::optional<T>& opt) { return !opt.has_value(); }
+inline bool isNone(const ::std::optional<T>& opt) { return !opt.has_value(); }
 
 template<typename T>
-inline T unwrap(const std::optional<T>& opt) {
+inline T unwrap(const ::std::optional<T>& opt) {
     if (!opt.has_value()) {
-        throw std::runtime_error("Called unwrap on None value");
+        throw ::std::runtime_error("Called unwrap on None value");
     }
     return opt.value();
 }
 
 template<typename T>
-inline T unwrapOr(const std::optional<T>& opt, const T& defaultValue) {
+inline T unwrapOr(const ::std::optional<T>& opt, const T& defaultValue) {
     return opt.value_or(defaultValue);
 }
 
 namespace Std {
 
-// Core I/O functions
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <functional>
+#include <optional>
+#include <algorithm>
+#include <chrono>
+#include <thread>
+#include <random>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
+#include <filesystem>
+#include <iomanip>
+#include <numeric>
+#include <regex>
+
+
+// Template helpers for string conversion
 template<typename T>
-inline void print(const T& val) { std::cout << mg_to_string(val); }
+inline ::std::string mg_to_string(const T& val) { 
+    ::std::ostringstream oss; 
+    oss << val; 
+    return oss.str(); 
+}
+
+template<>
+inline ::std::string mg_to_string(const bool& val) {
+    return val ? "true" : "false";
+}
+
+template<>
+inline ::std::string mg_to_string(const ::std::string& val) {
+    return val;
+}
+
+// Global Option helpers
+template<typename T>
+inline bool isSome(const ::std::optional<T>& opt) { return opt.has_value(); }
 
 template<typename T>
-inline void println(const T& val) { std::cout << mg_to_string(val) << std::endl; }
+inline bool isNone(const ::std::optional<T>& opt) { return !opt.has_value(); }
 
-inline void print(const std::string& s) { std::cout << s; }
-inline void println(const std::string& s) { std::cout << s << std::endl; }
+template<typename T>
+inline T unwrap(const ::std::optional<T>& opt) {
+    if (!opt.has_value()) {
+        throw ::std::runtime_error("Called unwrap on None value");
+    }
+    return opt.value();
+}
 
-inline std::string readLine() { 
-    std::string line; 
-    std::getline(std::cin, line); 
+template<typename T>
+inline T unwrapOr(const ::std::optional<T>& opt, const T& defaultValue) {
+    return opt.value_or(defaultValue);
+}
+
+namespace Std {
+
+// Module not found: Std.Core.Prelude
+// Module not found: Std.Random
+// Module not found: Std.File
+// Module not found: Std.Math
+// Module not found: Std.System
+// Module not found: Std.Time
+// Module not found: Std.Map
+// Module not found: Std.Array
+// Module not found: Std.String
+// Module not found: Std.IO
+
+// Convenience functions at Std level
+template<typename T>
+inline void print(const T& val) { ::std::cout << mg_to_string(val); }
+
+template<typename T>
+inline void println(const T& val) { ::std::cout << mg_to_string(val) << ::std::endl; }
+
+inline void print(const ::std::string& s) { ::std::cout << s; }
+inline void println(const ::std::string& s) { ::std::cout << s << ::std::endl; }
+
+inline ::std::string readLine() { 
+    ::std::string line; 
+    ::std::getline(::std::cin, line); 
     return line; 
 }
 
-inline std::string toString(int v) { return std::to_string(v); }
-inline std::string toString(double v) { return std::to_string(v); }
-inline std::string toString(bool v) { return v ? "true" : "false"; }
-inline int toInt(double v) { return static_cast<int>(v); }
-inline double toFloat(int v) { return static_cast<double>(v); }
+inline ::std::string toString(int v) { return ::std::to_string(v); }
+inline ::std::string toString(double v) { return ::std::to_string(v); }
+inline ::std::string toString(bool v) { return v ? "true" : "false"; }
+
+} // namespace Std
+
+using Std::println;
+using Std::print;
+using Std::readLine;
 
 } // namespace Std
 
@@ -92,29 +178,26 @@ using Std::print;
 using Std::readLine;
 
 // Array helper wrappers
-namespace Array {
-  template<typename T> std::vector<T> create() { return {}; }
-}
-template<typename T> int length(const std::vector<T>& arr) { return Std::Array::length(arr); }
-template<typename T> void push(std::vector<T>& arr, const T& val) { Std::Array::push(arr, val); }
-template<typename T> T pop(std::vector<T>& arr) { return Std::Array::pop(arr); }
+template<typename T> int length(const ::std::vector<T>& arr) { return arr.size(); }
+template<typename T> void push(::std::vector<T>& arr, const T& val) { arr.push_back(val); }
+template<typename T> T pop(::std::vector<T>& arr) { auto v = arr.back(); arr.pop_back(); return v; }
 
 // Map helper wrappers
 namespace Map {
-  template<typename K, typename V> std::unordered_map<K,V> create() { return {}; }
-  template<typename K, typename V> void insert(std::unordered_map<K,V>& m, const K& k, const V& v) { m[k] = v; }
-  template<typename K, typename V> std::optional<V> get(const std::unordered_map<K,V>& m, const K& k) {
-    auto it = m.find(k); return it != m.end() ? std::optional<V>(it->second) : std::nullopt;
+  template<typename K, typename V> ::std::unordered_map<K,V> create() { return {}; }
+  template<typename K, typename V> void insert(::std::unordered_map<K,V>& m, const K& k, const V& v) { m[k] = v; }
+  template<typename K, typename V> ::std::optional<V> get(const ::std::unordered_map<K,V>& m, const K& k) {
+    auto it = m.find(k); return it != m.end() ? ::std::optional<V>(it->second) : ::std::nullopt;
   }
-  template<typename K, typename V> std::vector<V> values(const std::unordered_map<K,V>& m) {
-    std::vector<V> r; for(auto& p : m) r.push_back(p.second); return r;
+  template<typename K, typename V> ::std::vector<V> values(const ::std::unordered_map<K,V>& m) {
+    ::std::vector<V> r; for(auto& p : m) r.push_back(p.second); return r;
   }
 }
 
 // File helper
 namespace File {
-  inline bool exists(const std::string& path) {
-    std::ifstream f(path); return f.good();
+  inline bool exists(const ::std::string& path) {
+    ::std::ifstream f(path); return f.good();
   }
 }
 
