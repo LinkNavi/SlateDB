@@ -23,6 +23,7 @@ fn main() {
     println($"User Email: {user.getString(\"email\")}");
     println($"User Active: {user.getBool(\"active\")}");
     println("");
+
     
     // Export unencrypted
     println("=== Unencrypted Export ===");
