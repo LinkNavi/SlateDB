@@ -191,15 +191,17 @@ class BinaryWriter {
     pub fn create() {}
     
     pub fn writeU8(val: int) {
-        this.data.push_back(val & 0xFF);
-    }
+       @cpp { this->data.push_back(val & 0xFF); }
+       }
     
-    pub fn writeU32(val: int) {
-        this.writeU8(val & 0xFF);
-        this.writeU8((val >> 8) & 0xFF);
-        this.writeU8((val >> 16) & 0xFF);
-        this.writeU8((val >> 24) & 0xFF);
+ pub fn writeU32(val: int) {
+    @cpp {
+        this->writeU8(val & 0xFF);
+        this->writeU8((val >> 8) & 0xFF);
+        this->writeU8((val >> 16) & 0xFF);
+        this->writeU8((val >> 24) & 0xFF);
     }
+}
     
     pub fn writeI64(val: int) {
         @cpp {
@@ -240,8 +242,11 @@ class BinaryWriter {
         } else if (val.valueType == TYPE_STRING) {
             this.writeString(val.stringValue);
         } else if (val.valueType == TYPE_BOOL) {
-            this.writeU8(val.boolValue ? 1 : 0);
-        } else if (val.valueType == TYPE_OBJECT_REF) {
+          if (val.boolValue) {
+    this.writeU8(1);
+} else {
+    this.writeU8(0);
+}        } else if (val.valueType == TYPE_OBJECT_REF) {
             this.writeI64(val.objectId);
         } else if (val.valueType == TYPE_ARRAY) {
             let arrLen: int = val.arrayValue.size();
@@ -275,8 +280,9 @@ class BinaryReader {
         let b1 = this.readU8();
         let b2 = this.readU8();
         let b3 = this.readU8();
-        return b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
-    }
+       @cpp {
+    return b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
+}    }
     
     pub fn readI64() -> int {
         @cpp {
@@ -492,8 +498,10 @@ pub class SlateDB {
         let writer = new BinaryWriter();
         
         // Magic + version
-        writer.writeU32(0x534C4154);  // "SLAT"
-        writer.writeU32(1);            // version
+      @cpp {
+    writer.writeU32(0x534C4154);  // "SLAT"
+    writer.writeU32(1);            // version
+}
         
         // Write schemas
         @cpp {
@@ -664,10 +672,12 @@ pub class SlateDB {
             
             // Verify magic
             uint32_t fileMagic = reader.readU32();
-            if (fileMagic != 0x534C4154) {
-                std::cerr << "Invalid database file" << std::endl;
-                return;
-            }
+        @cpp {
+    if (fileMagic != 0x534C4154) {
+        std::cerr << "Invalid database file" << std::endl;
+        return;
+    }
+}
             
             uint32_t version = reader.readU32();
             
