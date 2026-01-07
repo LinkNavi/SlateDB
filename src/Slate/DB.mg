@@ -560,10 +560,10 @@ pub fn exportObjectEncrypted(obj: SlateObject, filename: string, password: strin
 }
 
 pub fn importObjectEncrypted(filename: string, password: string) -> SlateObject {
-    let encrypted = new Crypto.CryptoResult();
-    
-    // Read encrypted file
+    // Create encrypted result directly in C++ to avoid namespace issues
     @cpp {
+        CryptoResult encrypted;
+        
         std::ifstream file(filename, std::ios::binary);
         if (!file) {
             std::cerr << "Failed to open file: " << filename << std::endl;
@@ -615,42 +615,39 @@ pub fn importObjectEncrypted(filename: string, password: string) -> SlateObject 
         
         std::cout << "Loaded " << (7 + 16 + 12 + 16 + 4 + len) 
                   << " bytes from " << filename << std::endl;
-    }
-    
-    // Decrypt (with Crypto. prefix)
-    let decrypted = Crypto.decrypt(encrypted, password);
-    
-    if (!decrypted.success) {
-        @cpp {
+        
+        // Decrypt
+        CryptoResult decrypted = decrypt(encrypted, password);
+        
+        if (!decrypted.success) {
             std::cerr << "Decryption failed: " << decrypted.error << std::endl;
             return SlateObject();
         }
-    }
-    
-    // Parse decrypted data
-    let reader = new BinaryReader();
-    reader.data = decrypted.data;
-    reader.pos = 0;
-    
-    // Read object metadata
-    let obj = new SlateObject();
-    obj.className = reader.readString();
-    obj.objectId = reader.readI64();
-    
-    // Read field count
-    let fieldCount = reader.readU32();
-    
-    // Read each field
-    @cpp {
+        
+        // Parse decrypted data
+        BinaryReader reader;
+        reader.data = decrypted.data;
+        reader.pos = 0;
+        
+        // Read object metadata
+        SlateObject obj;
+        obj.className = reader.readString();
+        obj.objectId = reader.readI64();
+        
+        // Read field count
+        int fieldCount = reader.readU32();
+        
+        // Read each field
         for (int i = 0; i < fieldCount; i++) {
             std::string key = reader.readString();
             SlateValue value = reader.readValue();
             obj.fields[key] = value;
         }
+        
+        return obj;
     }
-    
-    return obj;
 }
+
 
 // ============================
 // Schema Builder
