@@ -3,7 +3,6 @@
 
 @link { -lssl -lcrypto }
 @include { <openssl/evp.h> <openssl/rand.h> }
-@cimport { openssl/evp.h openssl/rand.h }
 
 // Encryption result containing ciphertext + metadata
 pub class CryptoResult {

@@ -181,7 +181,7 @@ pub fn center(s: string, width: int, padChar: string) -> string {
 }
 
 // ============================================================================
-// Output stream abstraction
+// Output stream abstraction - FIXED: Class methods need proper @cpp blocks
 // ============================================================================
 
 pub class Writer {
@@ -189,19 +189,30 @@ pub class Writer {
     pub autoFlush: bool;
     
     pub fn create() {
-        this.buffer = "";
-        this.autoFlush = false;
+        @cpp {
+            this->buffer = "";
+            this->autoFlush = false;
+        }
     }
     
     pub fn write(s: string) {
-        this.buffer = this.buffer + s;
-        if (this.autoFlush) {
-            this.flush();
+        @cpp {
+            this->buffer = this->buffer + s;
+            if (this->autoFlush) {
+                std::cout << this->buffer;
+                this->buffer = "";
+            }
         }
     }
     
     pub fn writeLine(s: string) {
-        this.write(s + "\n");
+        @cpp {
+            this->buffer = this->buffer + s + "\n";
+            if (this->autoFlush) {
+                std::cout << this->buffer;
+                this->buffer = "";
+            }
+        }
     }
     
     pub fn flush() {
@@ -212,14 +223,23 @@ pub class Writer {
     }
     
     pub fn toString() -> string {
-        return this.buffer;
+        @cpp {
+            return this->buffer;
+        }
     }
     
     pub fn clear() {
-        this.buffer = "";
+        @cpp {
+            this->buffer = "";
+        }
     }
 }
 
 pub fn newWriter() -> Writer {
-    return new Writer();
+    @cpp {
+        Writer w;
+        w.buffer = "";
+        w.autoFlush = false;
+        return w;
+    }
 }

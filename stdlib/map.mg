@@ -88,7 +88,7 @@ pub fn valuesStrStr(map: Map<string, string>) -> Array<string> {
 }
 
 // ============================================================================
-// String-Int Map operations
+// String-Int Map operations - FIXED: Use int64_t consistently
 // ============================================================================
 
 pub fn sizeStrInt(map: Map<string, int>) -> int {
@@ -129,7 +129,7 @@ pub fn containsStrInt(map: Map<string, int>, key: string) -> bool {
 
 pub fn insertStrInt(map: Map<string, int>, key: string, value: int) -> Map<string, int> {
     @cpp {
-        auto result = map;
+        std::unordered_map<std::string, int64_t> result = map;
         result[key] = value;
         return result;
     }
@@ -137,7 +137,7 @@ pub fn insertStrInt(map: Map<string, int>, key: string, value: int) -> Map<strin
 
 pub fn setStrInt(map: Map<string, int>, key: string, value: int) -> Map<string, int> {
     @cpp {
-        auto result = map;
+        std::unordered_map<std::string, int64_t> result = map;
         result[key] = value;
         return result;
     }
@@ -145,7 +145,7 @@ pub fn setStrInt(map: Map<string, int>, key: string, value: int) -> Map<string, 
 
 pub fn removeStrInt(map: Map<string, int>, key: string) -> Map<string, int> {
     @cpp {
-        auto result = map;
+        std::unordered_map<std::string, int64_t> result = map;
         result.erase(key);
         return result;
     }
@@ -175,7 +175,7 @@ pub fn valuesStrInt(map: Map<string, int>) -> Array<int> {
 
 pub fn incrementStrInt(map: Map<string, int>, key: string) -> Map<string, int> {
     @cpp {
-        auto result = map;
+        std::unordered_map<std::string, int64_t> result = map;
         result[key]++;
         return result;
     }
@@ -183,14 +183,14 @@ pub fn incrementStrInt(map: Map<string, int>, key: string) -> Map<string, int> {
 
 pub fn decrementStrInt(map: Map<string, int>, key: string) -> Map<string, int> {
     @cpp {
-        auto result = map;
+        std::unordered_map<std::string, int64_t> result = map;
         result[key]--;
         return result;
     }
 }
 
 // ============================================================================
-// Int-Int Map operations
+// Int-Int Map operations - FIXED: Use int64_t consistently
 // ============================================================================
 
 pub fn sizeIntInt(map: Map<int, int>) -> int {
@@ -227,7 +227,7 @@ pub fn containsIntInt(map: Map<int, int>, key: int) -> bool {
 
 pub fn insertIntInt(map: Map<int, int>, key: int, value: int) -> Map<int, int> {
     @cpp {
-        auto result = map;
+        std::unordered_map<int64_t, int64_t> result = map;
         result[key] = value;
         return result;
     }
@@ -235,7 +235,7 @@ pub fn insertIntInt(map: Map<int, int>, key: int, value: int) -> Map<int, int> {
 
 pub fn removeIntInt(map: Map<int, int>, key: int) -> Map<int, int> {
     @cpp {
-        auto result = map;
+        std::unordered_map<int64_t, int64_t> result = map;
         result.erase(key);
         return result;
     }
@@ -264,7 +264,7 @@ pub fn valuesIntInt(map: Map<int, int>) -> Array<int> {
 }
 
 // ============================================================================
-// Int-String Map operations  
+// Int-String Map operations - FIXED: Use int64_t consistently
 // ============================================================================
 
 pub fn sizeIntStr(map: Map<int, string>) -> int {
@@ -297,7 +297,7 @@ pub fn containsIntStr(map: Map<int, string>, key: int) -> bool {
 
 pub fn insertIntStr(map: Map<int, string>, key: int, value: string) -> Map<int, string> {
     @cpp {
-        auto result = map;
+        std::unordered_map<int64_t, std::string> result = map;
         result[key] = value;
         return result;
     }
@@ -305,7 +305,7 @@ pub fn insertIntStr(map: Map<int, string>, key: int, value: string) -> Map<int, 
 
 pub fn removeIntStr(map: Map<int, string>, key: int) -> Map<int, string> {
     @cpp {
-        auto result = map;
+        std::unordered_map<int64_t, std::string> result = map;
         result.erase(key);
         return result;
     }
