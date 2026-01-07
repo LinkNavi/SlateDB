@@ -1,16 +1,20 @@
+@cpp_header {
+    #include <cstring>
+}
+
 using Std.IO;
 using Std.File;
 using Std.String;
 using Std.Array;
 using Std.Map;
-using Std.crypto;
+using Std.Crypto;
 
 // ============================
 // ValueType holder (no top-level vars allowed)
 // ============================
 
 pub class ValueType {
-    pub static NULL: int = 0;
+    pub static VALUE_NULL: int = 0;
     pub static INT: int = 1;
     pub static FLOAT: int = 2;
     pub static STRING: int = 3;
@@ -26,19 +30,23 @@ pub class ValueType {
 pub class SlateSchema {
     pub className: string;
     pub classId: int;
-    pub fieldNames: Array;
-    pub fieldTypes: Array;
+    pub fieldNames: Array<string>;
+    pub fieldTypes: Array<int>;
 
     pub fn create() {
         this.className = "";
         this.classId = 0;
-        this.fieldNames = new Array();
-        this.fieldTypes = new Array();
+        @cpp {
+            this->fieldNames = std::vector<std::string>();
+            this->fieldTypes = std::vector<int>();
+        }
     }
 
     pub fn addField(name: string, typeCode: int) {
-        this.fieldNames.push_back(name);
-        this.fieldTypes.push_back(typeCode);
+        @cpp {
+            this->fieldNames.push_back(name);
+            this->fieldTypes.push_back(typeCode);
+        }
     }
 }
 
@@ -53,68 +61,75 @@ pub class SlateValue {
     pub stringValue: string;
     pub boolValue: bool;
     pub objectId: int;
-    pub arrayValue: Array;
+    pub arrayValue: Array<SlateValue>;
 
     pub fn create() {
-        this.valueType = ValueType.NULL;
+        this.valueType = 0;  // VALUE_NULL
         this.intValue = 0;
         this.floatValue = 0.0;
         this.stringValue = "";
         this.boolValue = false;
         this.objectId = -1;
-        this.arrayValue = new Array();
+        @cpp {
+            this->arrayValue = std::vector<SlateValue>();
+        }
     }
 
-    pub fn makeNull() -> SlateValue {
+    // Static factory methods
+    pub static fn makeNull() -> SlateValue {
         let v = new SlateValue();
-        v.valueType = ValueType.NULL;
+        v.valueType = 0;  // VALUE_NULL
         return v;
     }
 
-    pub fn makeInt(value: int) -> SlateValue {
+    pub static fn makeInt(value: int) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = ValueType.INT;
+        v.valueType = 1;  // INT
         v.intValue = value;
         return v;
     }
 
-    pub fn makeFloat(value: float) -> SlateValue {
+    pub static fn makeFloat(value: float) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = ValueType.FLOAT;
+        v.valueType = 2;  // FLOAT
         v.floatValue = value;
         return v;
     }
 
-    pub fn makeString(value: string) -> SlateValue {
+    pub static fn makeString(value: string) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = ValueType.STRING;
+        v.valueType = 3;  // STRING
         v.stringValue = value;
         return v;
     }
 
-    pub fn makeBool(value: bool) -> SlateValue {
+    pub static fn makeBool(value: bool) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = ValueType.BOOL;
+        v.valueType = 4;  // BOOL
         v.boolValue = value;
         return v;
     }
 
-    pub fn makeRef(id: int) -> SlateValue {
+    pub static fn makeRef(id: int) -> SlateValue {
         let v = new SlateValue();
-        v.valueType = ValueType.OBJECT_REF;
+        v.valueType = 5;  // OBJECT_REF
         v.objectId = id;
         return v;
     }
 
-    pub fn makeArray() -> SlateValue {
+    pub static fn makeArray() -> SlateValue {
         let v = new SlateValue();
-        v.valueType = ValueType.ARRAY;
-        v.arrayValue = new Array();
+        v.valueType = 6;  // ARRAY
+        @cpp {
+            v.arrayValue = std::vector<SlateValue>();
+        }
         return v;
     }
 
     pub fn push(val: SlateValue) {
-        this.arrayValue.push_back(val);
+        @cpp {
+            this->arrayValue.push_back(val);
+        }
     }
 }
 
@@ -125,19 +140,20 @@ pub class SlateValue {
 pub class SlateObject {
     pub className: string;
     pub objectId: int;
-    pub fields: Map;
+    pub fields: Map<string, SlateValue>;
 
     pub fn create() {
         this.className = "";
         this.objectId = 0;
-        this.fields = new Map();
+        @cpp {
+            this->fields = std::unordered_map<std::string, SlateValue>();
+        }
     }
 
     pub fn setField(name: string, value: SlateValue) {
         this.fields[name] = value;
     }
 
-    // returns Option<SlateValue> via C++ bridge (keeps original style)
     pub fn getField(name: string) -> Option<SlateValue> {
         @cpp {
             auto it = this->fields.find(name);
@@ -212,10 +228,12 @@ pub class SlateConfig {
 // ============================
 
 class BinaryWriter {
-    pub data: Array;
+    pub data: Array<int>;
 
     pub fn create() {
-        this.data = new Array();
+        @cpp {
+            this->data = std::vector<int>();
+        }
     }
 
     pub fn writeU8(val: int) {
@@ -263,27 +281,27 @@ class BinaryWriter {
     pub fn writeValue(val: SlateValue) {
         this.writeU8(val.valueType);
 
-        if (val.valueType == ValueType.INT) {
+        if (val.valueType == 1) {  // INT
             this.writeI64(val.intValue);
-        } else if (val.valueType == ValueType.FLOAT) {
+        } else if (val.valueType == 2) {  // FLOAT
             this.writeF64(val.floatValue);
-        } else if (val.valueType == ValueType.STRING) {
+        } else if (val.valueType == 3) {  // STRING
             this.writeString(val.stringValue);
-        } else if (val.valueType == ValueType.BOOL) {
+        } else if (val.valueType == 4) {  // BOOL
             if (val.boolValue) {
                 this.writeU8(1);
             } else {
                 this.writeU8(0);
             }
-        } else if (val.valueType == ValueType.OBJECT_REF) {
+        } else if (val.valueType == 5) {  // OBJECT_REF
             this.writeI64(val.objectId);
-        } else if (val.valueType == ValueType.ARRAY) {
-            let count = val.arrayValue.size();
-            this.writeU32(count);
-            let i = 0;
-            while (i < count) {
-                this.writeValue(val.arrayValue[i]);
-                i = i + 1;
+        } else if (val.valueType == 6) {  // ARRAY
+            @cpp {
+                int count = val.arrayValue.size();
+                this->writeU32(count);
+                for (int i = 0; i < count; i++) {
+                    this->writeValue(val.arrayValue[i]);
+                }
             }
         }
     }
@@ -294,11 +312,13 @@ class BinaryWriter {
 // ============================
 
 class BinaryReader {
-    pub data: Array;
+    pub data: Array<int>;
     pub pos: int;
 
     pub fn create() {
-        this.data = new Array();
+        @cpp {
+            this->data = std::vector<int>();
+        }
         this.pos = 0;
     }
 
@@ -355,22 +375,22 @@ class BinaryReader {
         let v = new SlateValue();
         v.valueType = typeCode;
 
-        if (typeCode == ValueType.INT) {
+        if (typeCode == 1) {  // INT
             v.intValue = this.readI64();
-        } else if (typeCode == ValueType.FLOAT) {
+        } else if (typeCode == 2) {  // FLOAT
             v.floatValue = this.readF64();
-        } else if (typeCode == ValueType.STRING) {
+        } else if (typeCode == 3) {  // STRING
             v.stringValue = this.readString();
-        } else if (typeCode == ValueType.BOOL) {
+        } else if (typeCode == 4) {  // BOOL
             v.boolValue = this.readU8() != 0;
-        } else if (typeCode == ValueType.OBJECT_REF) {
+        } else if (typeCode == 5) {  // OBJECT_REF
             v.objectId = this.readI64();
-        } else if (typeCode == ValueType.ARRAY) {
-            let count = this.readU32();
-            let i = 0;
-            while (i < count) {
-                v.arrayValue.push_back(this.readValue());
-                i = i + 1;
+        } else if (typeCode == 6) {  // ARRAY
+            @cpp {
+                int count = this->readU32();
+                for (int i = 0; i < count; i++) {
+                    v.arrayValue.push_back(this->readValue());
+                }
             }
         }
 
@@ -389,39 +409,39 @@ pub class Schema {
         this.schema = new SlateSchema();
     }
 
-    pub fn define(name: string) -> Schema {
+    pub static fn define(name: string) -> Schema {
         let s = new Schema();
         s.schema.className = name;
         return s;
     }
 
     pub fn addInt(name: string) -> Schema {
-        this.schema.addField(name, ValueType.INT);
+        this.schema.addField(name, 1);  // INT = 1
         return this;
     }
 
     pub fn addFloat(name: string) -> Schema {
-        this.schema.addField(name, ValueType.FLOAT);
+        this.schema.addField(name, 2);  // FLOAT = 2
         return this;
     }
 
     pub fn addString(name: string) -> Schema {
-        this.schema.addField(name, ValueType.STRING);
+        this.schema.addField(name, 3);  // STRING = 3
         return this;
     }
 
     pub fn addBool(name: string) -> Schema {
-        this.schema.addField(name, ValueType.BOOL);
+        this.schema.addField(name, 4);  // BOOL = 4
         return this;
     }
 
     pub fn addRef(name: string) -> Schema {
-        this.schema.addField(name, ValueType.OBJECT_REF);
+        this.schema.addField(name, 5);  // OBJECT_REF = 5
         return this;
     }
 
     pub fn addArray(name: string) -> Schema {
-        this.schema.addField(name, ValueType.ARRAY);
+        this.schema.addField(name, 6);  // ARRAY = 6
         return this;
     }
 

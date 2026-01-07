@@ -1,73 +1,35 @@
-// Example: Using SlateDB with encryption
 using Std.IO;
-using SlateDB.Slate.DB;
+using Slate.DB;
 
 fn main() {
-    // Create encrypted database
-    let db = SlateDB.createEncrypted("users.slate", "mySecretPassword123!");
+    println("Testing SlateDB classes...");
     
-    // Define schema using fluent API
-  db.schema(Schema.define("User")
+    // Create a schema using static method
+    let userSchema = Schema.define("User")
         .addInt("id")
-        .str("name")
-        .str("email")
-        .boolean("active")
-        .build());
+        .addString("name")
+        .addString("email")
+        .addBool("active");
+    let built = userSchema.build();
     
-    db.schema(Schema.define("Post")
-        .addInt("id")
-        .str("title")
-        .str("content")
-        .addRef("author")
-        .build());
+    println($"Created schema: {built.className}");
     
-    // Create objects
-    let userOpt = db.create("User");
-    if (isSome(userOpt)) {
-        let user = unwrap(userOpt);
-        user.set("id", SlateValue.addInt(1));
-        user.set("name", SlateValue.str("Alice"));
-        user.set("email", SlateValue.str("alice@example.com"));
-        user.set("active", SlateValue.addBool(true));
-        db.save(user);
-        
-        // Create a post
-        let postOpt = db.create("Post");
-        if (isSome(postOpt)) {
-            let post = unwrap(postOpt);
-            post.set("id", SlateValue.addInt(1));
-            post.set("title", SlateValue.str("Hello World"));
-            post.set("content", SlateValue.str("My first encrypted post!"));
-            post.set("author", SlateValue.addRef(user.objectId));
-            db.save(post);
-        }
-    }
+    // Create a SlateObject
+    let user = new SlateObject();
+    user.className = "User";
+    user.objectId = 1;
     
-    // Flush to disk (encrypted with AES-256-GCM)
-    db.flush();
-    db.close();
+    // Set fields using SlateValue static methods
+    user.setField("id", SlateValue.makeInt(1));
+    user.setField("name", SlateValue.makeString("Alice"));
+    user.setField("email", SlateValue.makeString("alice@example.com"));
+    user.setField("active", SlateValue.makeBool(true));
     
-    println("Database created and encrypted!");
+    // Get fields back
+    println($"User ID: {user.getInt(\"id\")}");
+    println($"User Name: {user.getString(\"name\")}");
+    println($"User Email: {user.getString(\"email\")}");
+    println($"User Active: {user.getBool(\"active\")}");
     
-    // Later: Open encrypted database
-    let db2 = SlateDB.openEncrypted("users.slate", "mySecretPassword123!");
-    
-    // Query users
-    let users = db2.find("User");
-    println($"Found {users.size()} users");
-    
-    let i = 0;
-    while (i < users.size()) {
-        let u = users[i];
-        println($"User: {u.getString(\"name\")} - {u.getString(\"email\")}");
-        i = i + 1;
-    }
-    
-    db2.close();
-    
-    // Wrong password will fail
-    println("Trying wrong password...");
-    let db3 = SlateDB.openEncrypted("users.slate", "wrongPassword");
-    let badUsers = db3.find("User");
-    println($"Users with wrong password: {badUsers.size()}"); // Will be 0
+    println("SlateDB test completed!");
 }
