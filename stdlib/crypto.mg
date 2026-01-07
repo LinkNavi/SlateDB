@@ -15,9 +15,9 @@ pub class CryptoResult {
     pub salt: Array<int>;
     
     pub fn create() {
-        this.success = false;
-        this.error = "";
         @cpp {
+            this->success = false;
+            this->error = "";
             this->data = std::vector<int64_t>();
             this->iv = std::vector<int64_t>();
             this->tag = std::vector<int64_t>();
@@ -32,26 +32,38 @@ pub class KeyConfig {
     pub keyLength: int;
     
     pub fn create() {
-        this.iterations = 100000;
-        this.keyLength = 32;
+        @cpp {
+            this->iterations = 100000;
+            this->keyLength = 32;
+        }
     }
 }
 
 pub fn standardConfig() -> KeyConfig {
-    let cfg = new KeyConfig();
-    return cfg;
+    @cpp {
+        KeyConfig cfg;
+        cfg.iterations = 100000;
+        cfg.keyLength = 32;
+        return cfg;
+    }
 }
 
 pub fn fastConfig() -> KeyConfig {
-    let cfg = new KeyConfig();
-    cfg.iterations = 10000;
-    return cfg;
+    @cpp {
+        KeyConfig cfg;
+        cfg.iterations = 10000;
+        cfg.keyLength = 32;
+        return cfg;
+    }
 }
 
 pub fn paranoidConfig() -> KeyConfig {
-    let cfg = new KeyConfig();
-    cfg.iterations = 500000;
-    return cfg;
+    @cpp {
+        KeyConfig cfg;
+        cfg.iterations = 500000;
+        cfg.keyLength = 32;
+        return cfg;
+    }
 }
 
 // Derive key from password using PBKDF2-SHA256
@@ -95,12 +107,28 @@ pub fn randomBytes(count: int) -> Array<int> {
 
 // Generate random salt (16 bytes)
 pub fn generateSalt() -> Array<int> {
-    return randomBytes(16);
+    @cpp {
+        std::vector<unsigned char> bytes(16);
+        RAND_bytes(bytes.data(), 16);
+        std::vector<int64_t> result(16);
+        for (int64_t i = 0; i < 16; i++) {
+            result[i] = bytes[i];
+        }
+        return result;
+    }
 }
 
 // Generate random IV for AES-GCM (12 bytes)
 pub fn generateIV() -> Array<int> {
-    return randomBytes(12);
+    @cpp {
+        std::vector<unsigned char> bytes(12);
+        RAND_bytes(bytes.data(), 12);
+        std::vector<int64_t> result(12);
+        for (int64_t i = 0; i < 12; i++) {
+            result[i] = bytes[i];
+        }
+        return result;
+    }
 }
 
 // Encrypt data using AES-256-GCM
@@ -278,20 +306,13 @@ pub fn encryptString(text: string, password: string) -> CryptoResult {
         for (size_t i = 0; i < text.size(); i++) {
             bytes[i] = static_cast<unsigned char>(text[i]);
         }
-        return encrypt(bytes, password);
+        return Crypto::encrypt(bytes, password);
     }
 }
 
 // Decrypt binary to string
 pub fn decryptToString(encrypted: CryptoResult, password: string) -> string {
     @cpp {
-        CryptoResult decrypted;
-        decrypted.success = false;
-        decrypted.data = std::vector<int64_t>();
-        decrypted.iv = std::vector<int64_t>();
-        decrypted.tag = std::vector<int64_t>();
-        decrypted.salt = std::vector<int64_t>();
-        
         if (!encrypted.success || encrypted.data.empty()) {
             return "";
         }

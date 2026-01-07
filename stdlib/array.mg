@@ -24,31 +24,54 @@ pub fn isEmptyStr(arr: Array<string>) -> bool {
     }
 }
 
-pub fn pushInt(arr: Array<int>, value: int) {
+// FIX: Return new array with value appended
+pub fn pushInt(arr: Array<int>, value: int) -> Array<int> {
     @cpp {
-        arr.push_back(value);
+        auto result = arr;
+        result.push_back(value);
+        return result;
     }
 }
 
-pub fn pushStr(arr: Array<string>, value: string) {
+pub fn pushStr(arr: Array<string>, value: string) -> Array<string> {
     @cpp {
-        arr.push_back(value);
+        auto result = arr;
+        result.push_back(value);
+        return result;
     }
 }
 
+// FIX: Return pair-like struct with popped value and new array
 pub fn popInt(arr: Array<int>) -> int {
     @cpp {
-        auto v = arr.back();
-        arr.pop_back();
-        return v;
+        if (arr.empty()) return 0;
+        return arr.back();
     }
 }
 
 pub fn popStr(arr: Array<string>) -> string {
     @cpp {
-        auto v = arr.back();
-        arr.pop_back();
-        return v;
+        if (arr.empty()) return "";
+        return arr.back();
+    }
+}
+
+// Helper to get array without last element
+pub fn popArrayInt(arr: Array<int>) -> Array<int> {
+    @cpp {
+        if (arr.empty()) return arr;
+        auto result = arr;
+        result.pop_back();
+        return result;
+    }
+}
+
+pub fn popArrayStr(arr: Array<string>) -> Array<string> {
+    @cpp {
+        if (arr.empty()) return arr;
+        auto result = arr;
+        result.pop_back();
+        return result;
     }
 }
 
@@ -94,19 +117,22 @@ pub fn getStr(arr: Array<string>, index: int) -> Option<string> {
     }
 }
 
-pub fn setInt(arr: Array<int>, index: int, value: int) -> bool {
+// FIX: Return new array with value set at index
+pub fn setInt(arr: Array<int>, index: int, value: int) -> Array<int> {
     @cpp {
-        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return false;
-        arr[static_cast<size_t>(index)] = value;
-        return true;
+        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return arr;
+        auto result = arr;
+        result[static_cast<size_t>(index)] = value;
+        return result;
     }
 }
 
-pub fn setStr(arr: Array<string>, index: int, value: string) -> bool {
+pub fn setStr(arr: Array<string>, index: int, value: string) -> Array<string> {
     @cpp {
-        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return false;
-        arr[static_cast<size_t>(index)] = value;
-        return true;
+        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return arr;
+        auto result = arr;
+        result[static_cast<size_t>(index)] = value;
+        return result;
     }
 }
 
@@ -194,15 +220,16 @@ pub fn indexOfStr(arr: Array<string>, value: string) -> Option<int> {
     }
 }
 
-pub fn clearInt(arr: Array<int>) {
+// FIX: Return new empty array
+pub fn clearInt(arr: Array<int>) -> Array<int> {
     @cpp {
-        arr.clear();
+        return std::vector<int64_t>();
     }
 }
 
-pub fn clearStr(arr: Array<string>) {
+pub fn clearStr(arr: Array<string>) -> Array<string> {
     @cpp {
-        arr.clear();
+        return std::vector<std::string>();
     }
 }
 

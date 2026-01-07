@@ -53,26 +53,38 @@ namespace Crypto {
     };
 
     inline void create() {
-        this->data = std::vector<int64_t>();
+        this->success = false;
+                    this->error = "";
+                    this->data = std::vector<int64_t>();
                     this->iv = std::vector<int64_t>();
                     this->tag = std::vector<int64_t>();
                     this->salt = std::vector<int64_t>();
     }
 
     inline void create() {
-        // Implementation not found
+        this->iterations = 100000;
+                    this->keyLength = 32;
     }
 
     inline KeyConfig standardConfig() {
-        // Implementation not found
+        KeyConfig cfg;
+                cfg.iterations = 100000;
+                cfg.keyLength = 32;
+                return cfg;
     }
 
     inline KeyConfig fastConfig() {
-        // Implementation not found
+        KeyConfig cfg;
+                cfg.iterations = 10000;
+                cfg.keyLength = 32;
+                return cfg;
     }
 
     inline KeyConfig paranoidConfig() {
-        // Implementation not found
+        KeyConfig cfg;
+                cfg.iterations = 500000;
+                cfg.keyLength = 32;
+                return cfg;
     }
 
     inline std::vector<int64_t> deriveKey(const std::string& password, const std::vector<int64_t>& salt, KeyConfig config) {
@@ -109,11 +121,23 @@ namespace Crypto {
     }
 
     inline std::vector<int64_t> generateSalt() {
-        // Implementation not found
+        std::vector<unsigned char> bytes(16);
+                RAND_bytes(bytes.data(), 16);
+                std::vector<int64_t> result(16);
+                for (int64_t i = 0; i < 16; i++) {
+                    result[i] = bytes[i];
+                }
+                return result;
     }
 
     inline std::vector<int64_t> generateIV() {
-        // Implementation not found
+        std::vector<unsigned char> bytes(12);
+                RAND_bytes(bytes.data(), 12);
+                std::vector<int64_t> result(12);
+                for (int64_t i = 0; i < 12; i++) {
+                    result[i] = bytes[i];
+                }
+                return result;
     }
 
     inline CryptoResult encrypt(const std::vector<int64_t>& plaintext, const std::string& password) {
@@ -283,18 +307,11 @@ namespace Crypto {
                 for (size_t i = 0; i < text.size(); i++) {
                     bytes[i] = static_cast<unsigned char>(text[i]);
                 }
-                return encrypt(bytes, password);
+                return Crypto::encrypt(bytes, password);
     }
 
     inline std::string decryptToString(CryptoResult encrypted, const std::string& password) {
-        CryptoResult decrypted;
-                decrypted.success = false;
-                decrypted.data = std::vector<int64_t>();
-                decrypted.iv = std::vector<int64_t>();
-                decrypted.tag = std::vector<int64_t>();
-                decrypted.salt = std::vector<int64_t>();
-                
-                if (!encrypted.success || encrypted.data.empty()) {
+        if (!encrypted.success || encrypted.data.empty()) {
                     return "";
                 }
                 
@@ -421,8 +438,8 @@ namespace Map {
         return map.empty();
     }
 
-    inline void clearStrStr(const std::unordered_map<std::string, std::string>& map) {
-        map.clear();
+    inline std::unordered_map<std::string, std::string> clearStrStr(const std::unordered_map<std::string, std::string>& map) {
+        return std::unordered_map<std::string, std::string>();
     }
 
     inline std::optional<std::string> getStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key) {
@@ -445,21 +462,22 @@ namespace Map {
         return map.find(key) != map.end();
     }
 
-    inline void insertStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key, const std::string& value) {
-        map[key] = value;
+    inline std::unordered_map<std::string, std::string> insertStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key, const std::string& value) {
+        auto result = map;
+                result[key] = value;
+                return result;
     }
 
-    inline void setStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key, const std::string& value) {
-        map[key] = value;
+    inline std::unordered_map<std::string, std::string> setStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key, const std::string& value) {
+        auto result = map;
+                result[key] = value;
+                return result;
     }
 
-    inline bool removeStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key) {
-        auto it = map.find(key);
-                if (it != map.end()) {
-                    map.erase(it);
-                    return true;
-                }
-                return false;
+    inline std::unordered_map<std::string, std::string> removeStrStr(const std::unordered_map<std::string, std::string>& map, const std::string& key) {
+        auto result = map;
+                result.erase(key);
+                return result;
     }
 
     inline std::vector<std::string> keysStrStr(const std::unordered_map<std::string, std::string>& map) {
@@ -488,8 +506,8 @@ namespace Map {
         return map.empty();
     }
 
-    inline void clearStrInt(const std::unordered_map<std::string, int64_t>& map) {
-        map.clear();
+    inline std::unordered_map<std::string, int> clearStrInt(const std::unordered_map<std::string, int64_t>& map) {
+        return std::unordered_map<std::string, int64_t>();
     }
 
     inline std::optional<int64_t> getStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
@@ -512,21 +530,22 @@ namespace Map {
         return map.find(key) != map.end();
     }
 
-    inline void insertStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key, int64_t value) {
-        map[key] = value;
+    inline std::unordered_map<std::string, int> insertStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key, int64_t value) {
+        auto result = map;
+                result[key] = value;
+                return result;
     }
 
-    inline void setStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key, int64_t value) {
-        map[key] = value;
+    inline std::unordered_map<std::string, int> setStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key, int64_t value) {
+        auto result = map;
+                result[key] = value;
+                return result;
     }
 
-    inline bool removeStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
-        auto it = map.find(key);
-                if (it != map.end()) {
-                    map.erase(it);
-                    return true;
-                }
-                return false;
+    inline std::unordered_map<std::string, int> removeStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
+        auto result = map;
+                result.erase(key);
+                return result;
     }
 
     inline std::vector<std::string> keysStrInt(const std::unordered_map<std::string, int64_t>& map) {
@@ -547,12 +566,16 @@ namespace Map {
                 return result;
     }
 
-    inline void incrementStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
-        map[key]++;
+    inline std::unordered_map<std::string, int> incrementStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
+        auto result = map;
+                result[key]++;
+                return result;
     }
 
-    inline void decrementStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
-        map[key]--;
+    inline std::unordered_map<std::string, int> decrementStrInt(const std::unordered_map<std::string, int64_t>& map, const std::string& key) {
+        auto result = map;
+                result[key]--;
+                return result;
     }
 
     inline int64_t sizeIntInt(const std::unordered_map<int64_t, int64_t>& map) {
@@ -583,17 +606,16 @@ namespace Map {
         return map.find(key) != map.end();
     }
 
-    inline void insertIntInt(const std::unordered_map<int64_t, int64_t>& map, int64_t key, int64_t value) {
-        map[key] = value;
+    inline std::unordered_map<int, int> insertIntInt(const std::unordered_map<int64_t, int64_t>& map, int64_t key, int64_t value) {
+        auto result = map;
+                result[key] = value;
+                return result;
     }
 
-    inline bool removeIntInt(const std::unordered_map<int64_t, int64_t>& map, int64_t key) {
-        auto it = map.find(key);
-                if (it != map.end()) {
-                    map.erase(it);
-                    return true;
-                }
-                return false;
+    inline std::unordered_map<int, int> removeIntInt(const std::unordered_map<int64_t, int64_t>& map, int64_t key) {
+        auto result = map;
+                result.erase(key);
+                return result;
     }
 
     inline std::vector<int64_t> keysIntInt(const std::unordered_map<int64_t, int64_t>& map) {
@@ -638,17 +660,16 @@ namespace Map {
         return map.find(key) != map.end();
     }
 
-    inline void insertIntStr(const std::unordered_map<int64_t, std::string>& map, int64_t key, const std::string& value) {
-        map[key] = value;
+    inline std::unordered_map<int, std::string> insertIntStr(const std::unordered_map<int64_t, std::string>& map, int64_t key, const std::string& value) {
+        auto result = map;
+                result[key] = value;
+                return result;
     }
 
-    inline bool removeIntStr(const std::unordered_map<int64_t, std::string>& map, int64_t key) {
-        auto it = map.find(key);
-                if (it != map.end()) {
-                    map.erase(it);
-                    return true;
-                }
-                return false;
+    inline std::unordered_map<int, std::string> removeIntStr(const std::unordered_map<int64_t, std::string>& map, int64_t key) {
+        auto result = map;
+                result.erase(key);
+                return result;
     }
 
 } // namespace Map
@@ -674,24 +695,40 @@ namespace Array {
         return arr.empty();
     }
 
-    inline void pushInt(const std::vector<int64_t>& arr, int64_t value) {
-        arr.push_back(value);
+    inline std::vector<int64_t> pushInt(const std::vector<int64_t>& arr, int64_t value) {
+        auto result = arr;
+                result.push_back(value);
+                return result;
     }
 
-    inline void pushStr(const std::vector<std::string>& arr, const std::string& value) {
-        arr.push_back(value);
+    inline std::vector<std::string> pushStr(const std::vector<std::string>& arr, const std::string& value) {
+        auto result = arr;
+                result.push_back(value);
+                return result;
     }
 
     inline int64_t popInt(const std::vector<int64_t>& arr) {
-        auto v = arr.back();
-                arr.pop_back();
-                return v;
+        if (arr.empty()) return 0;
+                return arr.back();
     }
 
     inline std::string popStr(const std::vector<std::string>& arr) {
-        auto v = arr.back();
-                arr.pop_back();
-                return v;
+        if (arr.empty()) return "";
+                return arr.back();
+    }
+
+    inline std::vector<int64_t> popArrayInt(const std::vector<int64_t>& arr) {
+        if (arr.empty()) return arr;
+                auto result = arr;
+                result.pop_back();
+                return result;
+    }
+
+    inline std::vector<std::string> popArrayStr(const std::vector<std::string>& arr) {
+        if (arr.empty()) return arr;
+                auto result = arr;
+                result.pop_back();
+                return result;
     }
 
     inline std::optional<int64_t> firstInt(const std::vector<int64_t>& arr) {
@@ -724,16 +761,18 @@ namespace Array {
                 return arr[static_cast<size_t>(index)];
     }
 
-    inline bool setInt(const std::vector<int64_t>& arr, int64_t index, int64_t value) {
-        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return false;
-                arr[static_cast<size_t>(index)] = value;
-                return true;
+    inline std::vector<int64_t> setInt(const std::vector<int64_t>& arr, int64_t index, int64_t value) {
+        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return arr;
+                auto result = arr;
+                result[static_cast<size_t>(index)] = value;
+                return result;
     }
 
-    inline bool setStr(const std::vector<std::string>& arr, int64_t index, const std::string& value) {
-        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return false;
-                arr[static_cast<size_t>(index)] = value;
-                return true;
+    inline std::vector<std::string> setStr(const std::vector<std::string>& arr, int64_t index, const std::string& value) {
+        if (index < 0 || static_cast<size_t>(index) >= arr.size()) return arr;
+                auto result = arr;
+                result[static_cast<size_t>(index)] = value;
+                return result;
     }
 
     inline std::vector<int64_t> sliceInt(const std::vector<int64_t>& arr, int64_t start, int64_t end) {
@@ -800,12 +839,12 @@ namespace Array {
                 return static_cast<int64_t>(std::distance(arr.begin(), it));
     }
 
-    inline void clearInt(const std::vector<int64_t>& arr) {
-        arr.clear();
+    inline std::vector<int64_t> clearInt(const std::vector<int64_t>& arr) {
+        return std::vector<int64_t>();
     }
 
-    inline void clearStr(const std::vector<std::string>& arr) {
-        arr.clear();
+    inline std::vector<std::string> clearStr(const std::vector<std::string>& arr) {
+        return std::vector<std::string>();
     }
 
     inline std::vector<int64_t> filled(int64_t size, int64_t value) {
@@ -1472,14 +1511,14 @@ public:
         // Inline C++ code:
 
             this->fieldNames = std::vector<std::string>();
-            this->fieldTypes = std::vector<int>();
+            this->fieldTypes = std::vector<int64_t>();
         
     }
     void addField(std::string name, int64_t typeCode) {
         // Inline C++ code:
 
             this->fieldNames.push_back(name);
-            this->fieldTypes.push_back(typeCode);
+            this->fieldTypes.push_back(static_cast<int64_t>(typeCode));
         
     }
 };
@@ -1691,12 +1730,12 @@ public:
     void create() {
         // Inline C++ code:
 
-            this->data = std::vector<int>();
+            this->data = std::vector<int64_t>();
         
     }
     void writeU8(int64_t val) {
         // Inline C++ code:
- this->data.push_back(val & 0xFF); 
+ this->data.push_back(static_cast<int64_t>(val & 0xFF)); 
     }
     void writeU32(int64_t val) {
         // Inline C++ code:
@@ -1711,7 +1750,7 @@ public:
         // Inline C++ code:
 
             for (int i = 0; i < 8; i++) {
-                this->data.push_back((val >> (i * 8)) & 0xFF);
+                this->data.push_back(static_cast<int64_t>((val >> (i * 8)) & 0xFF));
             }
         
     }
@@ -1722,7 +1761,7 @@ public:
             uint64_t bits;
             memcpy(&bits, &d, sizeof(bits));
             for (int i = 0; i < 8; i++) {
-                this->data.push_back((bits >> (i * 8)) & 0xFF);
+                this->data.push_back(static_cast<int64_t>((bits >> (i * 8)) & 0xFF));
             }
         
     }
@@ -1732,7 +1771,7 @@ public:
         // Inline C++ code:
 
             for (char c : val) {
-                this->data.push_back(static_cast<unsigned char>(c));
+                this->data.push_back(static_cast<int64_t>(static_cast<unsigned char>(c)));
             }
         
     }
@@ -1782,12 +1821,7 @@ public:
     std::vector<int64_t> toInt64Vector() {
         // Inline C++ code:
 
-            std::vector<int64_t> result;
-            result.reserve(this->data.size());
-            for (int byte : this->data) {
-                result.push_back(static_cast<int64_t>(byte));
-            }
-            return result;
+            return this->data;
         
     }
 };
@@ -1806,24 +1840,24 @@ public:
     void create() {
         // Inline C++ code:
 
-            this->data = std::vector<int>();
+            this->data = std::vector<int64_t>();
         
         this->pos = 0;
     }
     void setFromInt64Vector(std::vector<int64_t> int64Data) {
         // Inline C++ code:
 
-            this->data.clear();
-            for (int64_t byte : int64Data) {
-                this->data.push_back(static_cast<int>(byte));
-            }
+            this->data = int64Data;
             this->pos = 0;
         
     }
     int64_t readU8() {
-        auto v = this->data[this->pos];
-        this->pos = (this->pos + 1);
-        return v;
+        // Inline C++ code:
+
+            int64_t v = this->data[this->pos];
+            this->pos = this->pos + 1;
+            return v;
+        
     }
     int64_t readU32() {
         auto b0 = this->readU8();
@@ -1861,7 +1895,7 @@ public:
 
             std::string s;
             s.reserve(len);
-            for (int i = 0; i < len; i++) {
+            for (int64_t i = 0; i < len; i++) {
                 s += static_cast<char>(this->data[this->pos++]);
             }
             return s;
@@ -1991,7 +2025,7 @@ void exportObject(SlateObject obj, std::string filename) {
             return;
         }
         
-        for (int byte : writer.data) {
+        for (int64_t byte : writer.data) {
             file.put(static_cast<char>(byte));
         }
         
@@ -2016,7 +2050,7 @@ SlateObject importObject(std::string filename) {
         
         reader.data.clear();
         for (size_t i = 0; i < size; i++) {
-            reader.data.push_back(static_cast<unsigned char>(file.get()));
+            reader.data.push_back(static_cast<int64_t>(static_cast<unsigned char>(file.get())));
         }
         
         file.close();
@@ -2054,19 +2088,12 @@ void exportObjectEncrypted(SlateObject obj, std::string filename, std::string pa
     
     // Inline C++ code:
 
-        // Convert int to int64_t for Crypto::encrypt
-        std::vector<int64_t> plaintextData;
-        plaintextData.reserve(writer.data.size());
-        for (int byte : writer.data) {
-            plaintextData.push_back(static_cast<int64_t>(byte));
-        }
-        
         // Import Crypto functions directly
         using Crypto::CryptoResult;
         using Crypto::encrypt;
         
-        // Encrypt data
-        CryptoResult encrypted = encrypt(plaintextData, password);
+        // Encrypt data (writer.data is already std::vector<int64_t>)
+        CryptoResult encrypted = encrypt(writer.data, password);
         
         if (!encrypted.success) {
             std::cerr << "Encryption failed: " << encrypted.error << std::endl;
@@ -2186,12 +2213,9 @@ SlateObject importObjectEncrypted(std::string filename, std::string password) {
             return SlateObject();
         }
         
-        // Parse decrypted data - convert int64_t back to int
+        // Parse decrypted data
         BinaryReader reader;
-        reader.data.clear();
-        for (int64_t byte : decrypted.data) {
-            reader.data.push_back(static_cast<int>(byte));
-        }
+        reader.data = decrypted.data;
         reader.pos = 0;
         
         // Read object metadata

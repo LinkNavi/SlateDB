@@ -24,7 +24,7 @@ pub class ValueType {
 }
 
 // ============================
-// SlateSchema
+// SlateSchema - FIX: Use int64_t consistently
 // ============================
 
 pub class SlateSchema {
@@ -38,14 +38,14 @@ pub class SlateSchema {
         this.classId = 0;
         @cpp {
             this->fieldNames = std::vector<std::string>();
-            this->fieldTypes = std::vector<int>();
+            this->fieldTypes = std::vector<int64_t>();
         }
     }
 
     pub fn addField(name: string, typeCode: int) {
         @cpp {
             this->fieldNames.push_back(name);
-            this->fieldTypes.push_back(typeCode);
+            this->fieldTypes.push_back(static_cast<int64_t>(typeCode));
         }
     }
 }
@@ -224,21 +224,20 @@ pub class SlateConfig {
 }
 
 // ============================
-// BinaryWriter - FIX: Use int64_t for Crypto compatibility
+// BinaryWriter - FIX: Use int64_t consistently
 // ============================
 
 class BinaryWriter {
-    // FIX: Changed from Array<int> to work with int64_t for Crypto
     pub data: Array<int>;
 
     pub fn create() {
         @cpp {
-            this->data = std::vector<int>();
+            this->data = std::vector<int64_t>();
         }
     }
 
     pub fn writeU8(val: int) {
-        @cpp { this->data.push_back(val & 0xFF); }
+        @cpp { this->data.push_back(static_cast<int64_t>(val & 0xFF)); }
     }
 
     pub fn writeU32(val: int) {
@@ -253,7 +252,7 @@ class BinaryWriter {
     pub fn writeI64(val: int) {
         @cpp {
             for (int i = 0; i < 8; i++) {
-                this->data.push_back((val >> (i * 8)) & 0xFF);
+                this->data.push_back(static_cast<int64_t>((val >> (i * 8)) & 0xFF));
             }
         }
     }
@@ -264,7 +263,7 @@ class BinaryWriter {
             uint64_t bits;
             memcpy(&bits, &d, sizeof(bits));
             for (int i = 0; i < 8; i++) {
-                this->data.push_back((bits >> (i * 8)) & 0xFF);
+                this->data.push_back(static_cast<int64_t>((bits >> (i * 8)) & 0xFF));
             }
         }
     }
@@ -274,7 +273,7 @@ class BinaryWriter {
         this.writeU32(len);
         @cpp {
             for (char c : val) {
-                this->data.push_back(static_cast<unsigned char>(c));
+                this->data.push_back(static_cast<int64_t>(static_cast<unsigned char>(c)));
             }
         }
     }
@@ -307,21 +306,16 @@ class BinaryWriter {
         }
     }
     
-    // FIX: Convert to int64_t vector for Crypto
+    // Convert to int64_t vector for Crypto
     pub fn toInt64Vector() -> Array<int> {
         @cpp {
-            std::vector<int64_t> result;
-            result.reserve(this->data.size());
-            for (int byte : this->data) {
-                result.push_back(static_cast<int64_t>(byte));
-            }
-            return result;
+            return this->data;
         }
     }
 }
 
 // ============================
-// BinaryReader
+// BinaryReader - FIX: Use int64_t consistently
 // ============================
 
 class BinaryReader {
@@ -330,26 +324,25 @@ class BinaryReader {
 
     pub fn create() {
         @cpp {
-            this->data = std::vector<int>();
+            this->data = std::vector<int64_t>();
         }
         this.pos = 0;
     }
     
-    // FIX: Set data from int64_t vector
+    // Set data from int64_t vector
     pub fn setFromInt64Vector(int64Data: Array<int>) {
         @cpp {
-            this->data.clear();
-            for (int64_t byte : int64Data) {
-                this->data.push_back(static_cast<int>(byte));
-            }
+            this->data = int64Data;
             this->pos = 0;
         }
     }
 
     pub fn readU8() -> int {
-        let v = this.data[this.pos];
-        this.pos = this.pos + 1;
-        return v;
+        @cpp {
+            int64_t v = this->data[this->pos];
+            this->pos = this->pos + 1;
+            return v;
+        }
     }
 
     pub fn readU32() -> int {
@@ -387,7 +380,7 @@ class BinaryReader {
         @cpp {
             std::string s;
             s.reserve(len);
-            for (int i = 0; i < len; i++) {
+            for (int64_t i = 0; i < len; i++) {
                 s += static_cast<char>(this->data[this->pos++]);
             }
             return s;
@@ -452,7 +445,7 @@ pub fn exportObject(obj: SlateObject, filename: string) {
             return;
         }
         
-        for (int byte : writer.data) {
+        for (int64_t byte : writer.data) {
             file.put(static_cast<char>(byte));
         }
         
@@ -478,7 +471,7 @@ pub fn importObject(filename: string) -> SlateObject {
         
         reader.data.clear();
         for (size_t i = 0; i < size; i++) {
-            reader.data.push_back(static_cast<unsigned char>(file.get()));
+            reader.data.push_back(static_cast<int64_t>(static_cast<unsigned char>(file.get())));
         }
         
         file.close();
@@ -525,21 +518,14 @@ pub fn exportObjectEncrypted(obj: SlateObject, filename: string, password: strin
         }
     }
     
-    // FIX: Convert to int64_t vector for Crypto compatibility
+    // Encrypt and write
     @cpp {
-        // Convert int to int64_t for Crypto::encrypt
-        std::vector<int64_t> plaintextData;
-        plaintextData.reserve(writer.data.size());
-        for (int byte : writer.data) {
-            plaintextData.push_back(static_cast<int64_t>(byte));
-        }
-        
         // Import Crypto functions directly
         using Crypto::CryptoResult;
         using Crypto::encrypt;
         
-        // Encrypt data
-        CryptoResult encrypted = encrypt(plaintextData, password);
+        // Encrypt data (writer.data is already std::vector<int64_t>)
+        CryptoResult encrypted = encrypt(writer.data, password);
         
         if (!encrypted.success) {
             std::cerr << "Encryption failed: " << encrypted.error << std::endl;
@@ -658,12 +644,9 @@ pub fn importObjectEncrypted(filename: string, password: string) -> SlateObject 
             return SlateObject();
         }
         
-        // Parse decrypted data - convert int64_t back to int
+        // Parse decrypted data
         BinaryReader reader;
-        reader.data.clear();
-        for (int64_t byte : decrypted.data) {
-            reader.data.push_back(static_cast<int>(byte));
-        }
+        reader.data = decrypted.data;
         reader.pos = 0;
         
         // Read object metadata

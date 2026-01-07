@@ -1,8 +1,5 @@
 // Std.Map - HashMap/Dictionary operations
 // Key-value storage with O(1) average access
-// NOTE: Map operations are template-based and handled by codegen
-// These are convenience wrappers - actual Map<K,V> usage in user code
-// generates proper std::unordered_map<K,V> types
 
 // ============================================================================
 // String-String Map operations (most common use case)
@@ -16,8 +13,8 @@ pub fn isEmptyStrStr(map: Map<string, string>) -> bool {
     @cpp { return map.empty(); }
 }
 
-pub fn clearStrStr(map: Map<string, string>) {
-    @cpp { map.clear(); }
+pub fn clearStrStr(map: Map<string, string>) -> Map<string, string> {
+    @cpp { return std::unordered_map<std::string, std::string>(); }
 }
 
 pub fn getStrStr(map: Map<string, string>, key: string) -> Option<string> {
@@ -44,22 +41,27 @@ pub fn containsStrStr(map: Map<string, string>, key: string) -> bool {
     @cpp { return map.find(key) != map.end(); }
 }
 
-pub fn insertStrStr(map: Map<string, string>, key: string, value: string) {
-    @cpp { map[key] = value; }
-}
-
-pub fn setStrStr(map: Map<string, string>, key: string, value: string) {
-    @cpp { map[key] = value; }
-}
-
-pub fn removeStrStr(map: Map<string, string>, key: string) -> bool {
+pub fn insertStrStr(map: Map<string, string>, key: string, value: string) -> Map<string, string> {
     @cpp {
-        auto it = map.find(key);
-        if (it != map.end()) {
-            map.erase(it);
-            return true;
-        }
-        return false;
+        auto result = map;
+        result[key] = value;
+        return result;
+    }
+}
+
+pub fn setStrStr(map: Map<string, string>, key: string, value: string) -> Map<string, string> {
+    @cpp {
+        auto result = map;
+        result[key] = value;
+        return result;
+    }
+}
+
+pub fn removeStrStr(map: Map<string, string>, key: string) -> Map<string, string> {
+    @cpp {
+        auto result = map;
+        result.erase(key);
+        return result;
     }
 }
 
@@ -97,8 +99,8 @@ pub fn isEmptyStrInt(map: Map<string, int>) -> bool {
     @cpp { return map.empty(); }
 }
 
-pub fn clearStrInt(map: Map<string, int>) {
-    @cpp { map.clear(); }
+pub fn clearStrInt(map: Map<string, int>) -> Map<string, int> {
+    @cpp { return std::unordered_map<std::string, int64_t>(); }
 }
 
 pub fn getStrInt(map: Map<string, int>, key: string) -> Option<int> {
@@ -125,22 +127,27 @@ pub fn containsStrInt(map: Map<string, int>, key: string) -> bool {
     @cpp { return map.find(key) != map.end(); }
 }
 
-pub fn insertStrInt(map: Map<string, int>, key: string, value: int) {
-    @cpp { map[key] = value; }
-}
-
-pub fn setStrInt(map: Map<string, int>, key: string, value: int) {
-    @cpp { map[key] = value; }
-}
-
-pub fn removeStrInt(map: Map<string, int>, key: string) -> bool {
+pub fn insertStrInt(map: Map<string, int>, key: string, value: int) -> Map<string, int> {
     @cpp {
-        auto it = map.find(key);
-        if (it != map.end()) {
-            map.erase(it);
-            return true;
-        }
-        return false;
+        auto result = map;
+        result[key] = value;
+        return result;
+    }
+}
+
+pub fn setStrInt(map: Map<string, int>, key: string, value: int) -> Map<string, int> {
+    @cpp {
+        auto result = map;
+        result[key] = value;
+        return result;
+    }
+}
+
+pub fn removeStrInt(map: Map<string, int>, key: string) -> Map<string, int> {
+    @cpp {
+        auto result = map;
+        result.erase(key);
+        return result;
     }
 }
 
@@ -166,15 +173,19 @@ pub fn valuesStrInt(map: Map<string, int>) -> Array<int> {
     }
 }
 
-pub fn incrementStrInt(map: Map<string, int>, key: string) {
+pub fn incrementStrInt(map: Map<string, int>, key: string) -> Map<string, int> {
     @cpp {
-        map[key]++;
+        auto result = map;
+        result[key]++;
+        return result;
     }
 }
 
-pub fn decrementStrInt(map: Map<string, int>, key: string) {
+pub fn decrementStrInt(map: Map<string, int>, key: string) -> Map<string, int> {
     @cpp {
-        map[key]--;
+        auto result = map;
+        result[key]--;
+        return result;
     }
 }
 
@@ -214,18 +225,19 @@ pub fn containsIntInt(map: Map<int, int>, key: int) -> bool {
     @cpp { return map.find(key) != map.end(); }
 }
 
-pub fn insertIntInt(map: Map<int, int>, key: int, value: int) {
-    @cpp { map[key] = value; }
+pub fn insertIntInt(map: Map<int, int>, key: int, value: int) -> Map<int, int> {
+    @cpp {
+        auto result = map;
+        result[key] = value;
+        return result;
+    }
 }
 
-pub fn removeIntInt(map: Map<int, int>, key: int) -> bool {
+pub fn removeIntInt(map: Map<int, int>, key: int) -> Map<int, int> {
     @cpp {
-        auto it = map.find(key);
-        if (it != map.end()) {
-            map.erase(it);
-            return true;
-        }
-        return false;
+        auto result = map;
+        result.erase(key);
+        return result;
     }
 }
 
@@ -283,17 +295,18 @@ pub fn containsIntStr(map: Map<int, string>, key: int) -> bool {
     @cpp { return map.find(key) != map.end(); }
 }
 
-pub fn insertIntStr(map: Map<int, string>, key: int, value: string) {
-    @cpp { map[key] = value; }
+pub fn insertIntStr(map: Map<int, string>, key: int, value: string) -> Map<int, string> {
+    @cpp {
+        auto result = map;
+        result[key] = value;
+        return result;
+    }
 }
 
-pub fn removeIntStr(map: Map<int, string>, key: int) -> bool {
+pub fn removeIntStr(map: Map<int, string>, key: int) -> Map<int, string> {
     @cpp {
-        auto it = map.find(key);
-        if (it != map.end()) {
-            map.erase(it);
-            return true;
-        }
-        return false;
+        auto result = map;
+        result.erase(key);
+        return result;
     }
 }
